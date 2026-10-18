@@ -39,7 +39,7 @@ def test_formulaire_valide():
 
 @pytest.mark.parametrize("email", ["", "pas-un-email", "a@b", "a@b.fr\r\nBcc: x@y.fr",
                                    "a@b.fr, c@d.fr", "Nom <a@b.fr>", "a\x00b@c.fr",
-                                   "a" * 250 + "@b.fr"])
+                                   "a" * 250 + "@b.fr", "rené@ex.fr"])
 def test_email_refuse(email):
     assert "email" in valider({**OK, "email": email})[1]
 
@@ -227,3 +227,11 @@ def test_message_de_test(config):
     assert (m["To"], m["From"], m["Subject"]) == ("dest@test.invalid", "cv@nanodeus.com",
                                                  "[CV] Email de test")
     assert m["Reply-To"] is None and "18/10/2026 09:05 UTC" in m.get_content()
+
+
+def test_domaine_accentue_converti(config):
+    # Un domaine accentué part en punycode : en clair, il ferait un en-tête invalide.
+    formulaire, erreurs = valider({**OK, "email": "r@exémple.fr"})
+    assert erreurs == {} and formulaire.email == "r@xn--exmple-cva.fr"
+    assert "Reply-To: r@xn--exmple-cva.fr" in construire_message(
+        _demande(email=formulaire.email), config).as_string()

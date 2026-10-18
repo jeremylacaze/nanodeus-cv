@@ -1,7 +1,8 @@
 {# Modale « Demander l'accès », ouverte par contact.js. Fermée par défaut : sans
    JavaScript, le lien du bas de page mène à la page de contact à la place. #}
 <dialog class="modale-contact" aria-labelledby="titre-modale-contact"
-        data-erreur-reseau="{{ _("L'envoi n'a pas pu se faire. Vérifiez votre connexion, puis réessayez.") }}">
+        data-erreur-reseau="{{ _("L'envoi n'a pas pu se faire. Vérifiez votre connexion, puis réessayez.") }}"
+        data-erreur-serveur="{{ _("Une erreur est survenue. Votre demande a peut-être été enregistrée : patientez quelques minutes avant de réessayer.") }}">
   <div class="modale-contact__entete">
     <h2 id="titre-modale-contact">{{ _("Demander l'accès") }}</h2>
     <button type="button" class="btn-secondaire" data-action="fermer-contact">{{ _("Fermer") }}</button>

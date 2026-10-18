@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: nanodeus-cv VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-18 20:32+0200\n"
+"POT-Creation-Date: 2026-10-18 23:42+0200\n"
 "PO-Revision-Date: 2026-10-18 19:17+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -28,18 +28,8 @@ msgstr[1] "%(num)s years"
 msgid "Artefacts"
 msgstr "Artifacts"
 
-msgid ""
-"Ce site ne dépose aucun cookie. Chaque visite est notée sans votre "
-"adresse IP : date, page, source (LinkedIn, QR code…), type d'appareil et "
-"une empreinte pseudonyme renouvelée chaque jour. Ces visites sont "
-"effacées après 6 mois. Une demande de contact (email, message, nom et "
-"entreprise si indiqués) est gardée jusqu'à ce que Jeremy la supprime."
-msgstr ""
-"This site sets no cookies. Each visit is recorded without your IP "
-"address: date, page, source (LinkedIn, QR code…), device type and a "
-"pseudonymous fingerprint renewed every day. These visits are deleted "
-"after 6 months. A contact request (email, message, and name and company "
-"if given) is kept until Jeremy deletes it."
+msgid "Ce site ne dépose aucun cookie. Chaque visite est notée sans votre adresse IP : date, page, source (LinkedIn, QR code…), type d'appareil et une empreinte pseudonyme renouvelée chaque jour. Ces visites sont effacées après 6 mois. Une demande de contact (email, message, nom et entreprise si indiqués) est gardée jusqu'à ce que Jeremy la supprime."
+msgstr "This site sets no cookies. Each visit is recorded without your IP address: date, page, source (LinkedIn, QR code…), device type and a pseudonymous fingerprint renewed every day. These visits are deleted after 6 months. A contact request (email, message, and name and company if given) is kept until Jeremy deletes it."
 
 msgid "Centres d'intérêt"
 msgstr "Interests"
@@ -77,9 +67,7 @@ msgstr "Education"
 msgid "Indiquez une adresse email valide."
 msgstr "Please enter a valid email address."
 
-msgid ""
-"L'envoi n'a pas abouti, mais votre demande est bien enregistrée : Jeremy "
-"la verra."
+msgid "L'envoi n'a pas abouti, mais votre demande est bien enregistrée : Jeremy la verra."
 msgstr "Sending failed, but your request has been saved: Jeremy will see it."
 
 msgid "L'envoi n'a pas pu se faire. Vérifiez votre connexion, puis réessayez."
@@ -117,6 +105,9 @@ msgstr "Open"
 msgid "Page introuvable"
 msgstr "Page not found"
 
+msgid "Page introuvable."
+msgstr "Page not found."
+
 msgid "Parcours"
 msgstr "Career"
 
@@ -145,14 +136,14 @@ msgstr "Stack"
 msgid "Tests · soft skills (%(n)s/%(n)s passés)"
 msgstr "Tests · soft skills (%(n)s/%(n)s passed)"
 
-msgid "Trop de demandes"
-msgstr "Too many requests"
-
 msgid "Trop de demandes pour le moment. Réessayez plus tard."
 msgstr "Too many requests for now. Please try again later."
 
 msgid "Une erreur est survenue"
 msgstr "Something went wrong"
+
+msgid "Une erreur est survenue. Votre demande a peut-être été enregistrée : patientez quelques minutes avant de réessayer."
+msgstr "Something went wrong. Your request may have been saved: please wait a few minutes before trying again."
 
 #, python-format
 msgid "Une seule ligne, %(n)s caractères au plus."

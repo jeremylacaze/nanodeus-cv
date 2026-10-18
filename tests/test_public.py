@@ -211,3 +211,10 @@ def test_lien_autre_langue_reste_sur_le_site(client, url):
 def test_url_autre_langue(chemin, attendu):
     from cv.langue import url_autre_langue
     assert url_autre_langue(chemin) == attendu
+
+
+def test_erreur_500_en_json(client_qui_plante):
+    r = client_qui_plante.get("/plante", headers={"Accept": "application/json"})
+    assert r.status_code == 500 and r.is_json and r.json["ok"] is False
+    # Le message prévient qu'un renvoi immédiat pourrait faire un doublon.
+    assert "peut-être" in r.json["message"] and EMAIL not in r.get_data(as_text=True)

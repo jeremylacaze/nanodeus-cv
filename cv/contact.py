@@ -29,6 +29,18 @@ DELAI_EN_ATTENTE = timedelta(minutes=2)
 CONTROLE = re.compile(r"[\x00-\x1f\x7f-\x9f\u2028\u2029]")
 
 
+def _domaine_ascii(email: str) -> str:
+    """Domaine accentué converti en punycode : écrit tel quel, il ferait un en-tête
+    Reply-To invalide. La partie locale, elle, reste refusée si elle n'est pas ASCII."""
+    local, arobase, domaine = email.rpartition("@")
+    if not arobase or domaine.isascii():
+        return email
+    try:
+        return f"{local}@{domaine.encode('idna').decode('ascii')}"
+    except UnicodeError:
+        return email
+
+
 @dataclass
 class Formulaire:
     email: str = ""
@@ -45,8 +57,9 @@ def valider(donnees: Mapping[str, str]) -> tuple[Formulaire, dict[str, str]]:
         ("entreprise", "entreprise"), ("piege", "site_web"))})
     # Un saut de ligne vaut un caractère, comme pour le maxlength du navigateur.
     f.message = f.message.replace("\r\n", "\n").replace("\r", "\n")
+    f.email = _domaine_ascii(f.email)
     erreurs = {}
-    if len(f.email) > MAX_EMAIL or not _EMAIL.fullmatch(f.email):
+    if len(f.email) > MAX_EMAIL or not f.email.isascii() or not _EMAIL.fullmatch(f.email):
         erreurs["email"] = _("Indiquez une adresse email valide.")
     if not f.message:
         erreurs["message"] = _("Écrivez un message.")
