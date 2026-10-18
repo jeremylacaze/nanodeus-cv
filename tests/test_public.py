@@ -150,10 +150,21 @@ def test_role_admin_sans_blueprint_public(fabrique_app):
 
 
 @pytest.mark.parametrize("url", ["/en//evil.example", "/en/\\evil.example",
-                                 "/en/%2F%2Fevil.example"])
+                                 "/en/%2F%2Fevil.example", "/en/%09/evil.example",
+                                 "/en/%0A/evil.example", "/en/%20/evil.example",
+                                 "/%09/evil.example"])
 def test_lien_autre_langue_reste_sur_le_site(client, url):
     # Werkzeug fusionne d'abord les doubles barres (redirection sur le même hôte).
     corps = client.get(url, follow_redirects=True).get_data(as_text=True)
     liens = re.findall(r'href="([^"]*)"', corps)
     assert liens and all(lien.startswith("/") and not lien.startswith(("//", "/\\"))
                          for lien in liens)
+
+
+@pytest.mark.parametrize("chemin, attendu", [
+    ("/", "/en/"), ("/devops", "/en/devops"), ("/en/", "/"), ("/en", "/"),
+    ("/en/lead-tech", "/lead-tech"), ("/en/\t/evil.example", "/"),
+    ("/a/b", "/en/"), ("/Majuscule", "/en/")])
+def test_url_autre_langue(chemin, attendu):
+    from cv.langue import url_autre_langue
+    assert url_autre_langue(chemin) == attendu

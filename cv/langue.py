@@ -1,4 +1,5 @@
 """Langue de la page : portée par l'URL (/en/…), jamais par un cookie."""
+import re
 from pathlib import Path
 
 from babel.messages.mofile import write_mo
@@ -6,6 +7,7 @@ from babel.messages.pofile import read_po
 from flask import g, request
 
 LANGUES = ("fr", "en")
+_CHEMIN_DE_PAGE = re.compile(r"/[a-z0-9-]{0,40}")
 
 
 def langue_du_chemin(chemin: str) -> str:
@@ -15,11 +17,14 @@ def langue_du_chemin(chemin: str) -> str:
 def url_autre_langue(chemin: str) -> str:
     """Même page dans l'autre langue : /devops ↔ /en/devops, / ↔ /en/.
 
-    Une seule barre en tête : sur une 404 comme /en//ailleurs.example, le lien ne
-    doit pas devenir //ailleurs.example (adresse d'un autre site)."""
+    Seul un chemin de page réelle (/<slug>) est recopié ; tout autre chemin (404)
+    renvoie à l'accueil de l'autre langue. Recopier un chemin arbitraire ouvrirait
+    la porte à un lien vers un autre site (/en//ailleurs, /en/%09/ailleurs…)."""
     anglais = langue_du_chemin(chemin) == "en"
-    cible = "/" + (chemin[3:] if anglais else chemin).lstrip("/\\")
-    return cible if anglais else "/en" + cible
+    reste = (chemin[3:] if anglais else chemin) or "/"
+    if not _CHEMIN_DE_PAGE.fullmatch(reste):
+        reste = "/"
+    return reste if anglais else "/en" + reste
 
 
 def locale_selector() -> str:
