@@ -1,0 +1,19 @@
+{# Bas de page : coordonnées masquées comme des secrets de pipeline, puis artefacts.
+   Règle n° 1 : téléphone et email ne sont JAMAIS rendus, seulement « *** ». #}
+<footer class="pied">
+  <section class="secrets panneau" aria-labelledby="titre-secrets">
+    <h2 id="titre-secrets">{{ _("Secrets") }}</h2>
+    <div class="secret mono"><span><span aria-hidden="true">🔒</span> PHONE <span class="muted">***</span></span><span class="muted">{{ _("masqué") }}</span></div>
+    <div class="secret mono"><span><span aria-hidden="true">🔒</span> EMAIL <span class="muted">***</span></span>
+      <button type="button" class="btn-contact" data-action="demander-acces">{{ _("Demander l'accès") }}</button>
+    </div>
+  </section>
+  {% if vue.linkedin_url or vue.github_url %}
+  <section class="artefacts panneau" aria-labelledby="titre-artefacts">
+    <h2 id="titre-artefacts">{{ _("Artefacts") }}</h2>
+    {% for nom, url in [("LinkedIn", vue.linkedin_url), ("GitHub", vue.github_url)] if url %}
+    <a class="secret mono" href="{{ url }}" rel="me noopener" target="_blank"><span><span aria-hidden="true">🔗</span> {{ nom }}</span><span class="btn-secondaire">{{ _("Ouvrir") }}</span></a>
+    {% endfor %}
+  </section>
+  {% endif %}
+</footer>

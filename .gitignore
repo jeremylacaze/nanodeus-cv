@@ -1,0 +1,8 @@
+.venv/
+data/
+__pycache__/
+*.mo
+.superpowers/
+.pytest_cache/
+.ruff_cache/
+translations/messages.pot

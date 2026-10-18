@@ -1,0 +1,100 @@
+# English translations for nanodeus-cv.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the nanodeus-cv project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: nanodeus-cv VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-10-18 19:23+0200\n"
+"PO-Revision-Date: 2026-10-18 19:17+0200\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: en\n"
+"Language-Team: en <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#, python-format
+msgid "%(num)s an"
+msgid_plural "%(num)s ans"
+msgstr[0] "%(num)s year"
+msgstr[1] "%(num)s years"
+
+msgid "Artefacts"
+msgstr "Artifacts"
+
+msgid "Centres d'intérêt"
+msgstr "Interests"
+
+msgid "Chiffres clés"
+msgstr "Key figures"
+
+msgid "Demander l'accès"
+msgstr "Request access"
+
+msgid "Erreur"
+msgstr "Error"
+
+msgid "Expériences"
+msgstr "Experience"
+
+msgid "Formations"
+msgstr "Education"
+
+msgid "Langue"
+msgstr "Language"
+
+#, python-format
+msgid "Objectif : %(mission)s"
+msgstr "Goal: %(mission)s"
+
+msgid "Ouvrir"
+msgstr "Open"
+
+msgid "Page introuvable"
+msgstr "Page not found"
+
+msgid "Parcours"
+msgstr "Career"
+
+msgid "Prochaine mission"
+msgstr "Next mission"
+
+msgid "Projets personnels"
+msgstr "Personal projects"
+
+msgid "Retour au CV"
+msgstr "Back to the résumé"
+
+msgid "Secrets"
+msgstr "Secrets"
+
+msgid "Stack"
+msgstr "Stack"
+
+#, python-format
+msgid "Tests · soft skills (%(n)s/%(n)s passés)"
+msgstr "Tests · soft skills (%(n)s/%(n)s passed)"
+
+msgid "Une erreur est survenue"
+msgstr "Something went wrong"
+
+msgid "en attente d'un runner…"
+msgstr "waiting for a runner…"
+
+msgid "en cours…"
+msgstr "running…"
+
+msgid "masqué"
+msgstr "masked"
+
+msgid "ouvert aux opportunités"
+msgstr "open to opportunities"
+
+msgid "voie parallèle : projets perso"
+msgstr "parallel lane: side projects"
+

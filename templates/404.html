@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block meta %}<meta name="robots" content="noindex">{% endblock %}
+{% block titre %}{{ _("Page introuvable") }}{% endblock %}
+{% block contenu %}
+  <main class="erreur">
+    <h1>{{ _("Page introuvable") }}</h1>
+    <p><a href="{{ '/en/' if lang == 'en' else '/' }}">{{ _("Retour au CV") }}</a></p>
+  </main>
+{% endblock %}
