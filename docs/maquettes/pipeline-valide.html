@@ -1,0 +1,141 @@
+<style>
+  .gh { background:#0d1117; color:#e6edf3; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; border-radius:10px; padding:20px; font-size:13px; }
+  .gh .muted { color:#8b949e; } .gh .ok { color:#3fb950; } .gh .run { color:#d29922; }
+  .gh .mono { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; }
+  .gh .job { background:#161b22; border:1px solid #30363d; border-radius:6px; padding:8px 12px; display:flex; justify-content:space-between; gap:12px; white-space:nowrap; cursor:pointer; transition:border-color .15s; }
+  .gh .job:hover { border-color:#8b949e; }
+  .gh .job.sel { border-color:#58a6ff; box-shadow:0 0 0 1px #58a6ff; }
+  .gh .group { border:1px solid #30363d; border-radius:8px; padding:8px; display:flex; flex-direction:column; gap:6px; background:#11161d; }
+  .gh .line { width:20px; height:2px; background:#30363d; flex:none; }
+  .gh .panel { background:#161b22; border:1px solid #30363d; border-radius:6px; padding:14px; }
+  .gh .step { padding:3px 0; }
+  .gh .kpi { background:#161b22; border:1px solid #30363d; border-radius:6px; padding:10px 12px; flex:1; }
+  .gh .kpi b { font-size:20px; display:block; }
+  .gh .secret { background:#21262d; border:1px solid #30363d; border-radius:6px; padding:8px 12px; display:flex; justify-content:space-between; align-items:center; }
+  .gh .btn { background:#238636; color:#fff; border-radius:6px; padding:4px 10px; font-weight:600; font-size:12px; }
+  .gh .btn2 { background:#21262d; border:1px solid #30363d; color:#e6edf3; border-radius:6px; padding:4px 10px; font-size:12px; }
+  .gh h4 { margin:0 0 8px; font-size:12px; color:#8b949e; text-transform:uppercase; letter-spacing:.05em; }
+  .gh .photo { width:56px; height:56px; border-radius:50%; background:#30363d; border:2px solid #3fb950; display:flex; align-items:center; justify-content:center; font-weight:700; }
+  .pulse { animation:p 1.4s infinite; } @keyframes p { 50% { opacity:.35 } }
+  .phone { width:240px; flex:none; border:8px solid #30363d; border-radius:26px; padding:12px 10px; background:#0d1117; }
+  .vjob { margin-left:14px; border-left:2px solid #30363d; padding:0 0 8px 12px; position:relative; }
+  .vjob::before { content:""; position:absolute; left:-6px; top:10px; width:10px; height:10px; border-radius:50%; background:#3fb950; }
+  .vjob.cur::before { background:#d29922; }
+</style>
+
+<h2>Mélange A + B : le résumé du run, centré sur le pipeline</h2>
+<p class="subtitle">Les jobs du pipeline sont cliquables dans cette maquette, essaie. En dessous, la même page sur téléphone, puisque LinkedIn s'ouvre surtout sur mobile.</p>
+
+<div class="gh">
+  <!-- 1. Bandeau (B) -->
+  <div style="display:flex;gap:14px;align-items:center">
+    <div class="photo">JL</div>
+    <div style="flex:1">
+      <div><span class="ok">✓</span> <b style="font-size:18px">Jeremy LACAZE-RUSQUES</b></div>
+      <div class="muted">Administrateur applicatif / DevOps · Toulouse · <span class="run">● ouvert aux opportunités</span></div>
+      <div style="margin-top:4px">« Porteur d'idées, autonome, je fais grandir les équipes avec pédagogie. »</div>
+    </div>
+    <span class="muted mono">run #29</span>
+  </div>
+
+  <div style="display:flex;gap:8px;margin-top:14px">
+    <div class="kpi"><b>3 ans</b><span class="muted">d'expérience</span></div>
+    <div class="kpi"><b>5</b><span class="muted">outils administrés sur K8s</span></div>
+    <div class="kpi"><b>1</b><span class="muted">projet perso en prod</span></div>
+    <div class="kpi"><b>Bac+5</b><span class="muted">Mastère Ynov</span></div>
+  </div>
+
+  <!-- 2. Pipeline (A), avec voie parallèle pour les projets perso -->
+  <div style="margin-top:18px">
+    <h4>Parcours</h4>
+    <div style="display:flex;align-items:center;overflow-x:auto;padding-bottom:4px">
+      <div class="group">
+        <div class="job" data-k="ut3"><span><span class="ok">✓</span> Licence pro · UT3</span><span class="muted">2020</span></div>
+        <div class="job" data-k="ynov"><span><span class="ok">✓</span> Mastère · Ynov</span><span class="muted">2023</span></div>
+      </div>
+      <div class="line"></div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center">
+          <div class="job" data-k="navocap"><span><span class="ok">✓</span> DevOps · Navocap</span><span class="muted">5 m</span></div>
+          <div class="line"></div>
+          <div class="job sel" data-k="atlassian"><span><span class="ok">✓</span> Admin Atlassian</span><span class="muted">1 an 3 m</span></div>
+          <div class="line"></div>
+          <div class="job" data-k="sqli"><span><span class="ok">✓</span> Admin applicatif</span><span class="muted">1 an 5 m</span></div>
+        </div>
+        <div style="display:flex;align-items:center">
+          <div class="job" data-k="readln" style="border-style:dashed"><span><span class="ok">✓</span> Projet perso · ReadLN</span><span class="muted">en prod</span></div>
+          <span class="muted mono" style="margin-left:8px">↗ voie parallèle : projets perso</span>
+        </div>
+      </div>
+      <div class="line"></div>
+      <div class="job" data-k="lead"><span><span class="run pulse">●</span> Prochaine mission</span><span class="muted">en cours…</span></div>
+    </div>
+
+    <div class="panel mono" id="detail" style="margin-top:12px"></div>
+  </div>
+
+  <!-- 3. Soft skills (B) + compétences -->
+  <div style="display:flex;gap:12px;margin-top:16px">
+    <div class="panel" style="flex:1.3">
+      <h4>Tests · soft skills (3/3 passés)</h4>
+      <div class="step"><span class="ok">✓</span> Porteur d'idées <span class="muted">: a imaginé, construit et mis en production ReadLN seul</span></div>
+      <div class="step"><span class="ok">✓</span> Pédagogie <span class="muted">: support direct et accompagnement des utilisateurs Jira/Confluence</span></div>
+      <div class="step"><span class="ok">✓</span> Autonomie <span class="muted">: <i>preuve à écrire</i></span></div>
+    </div>
+    <div class="panel" style="flex:1">
+      <h4>Stack</h4>
+      <div class="mono">Docker · Kubernetes · Shell · PowerShell<br>Python · PostgreSQL · Java · C<br>HTML/CSS/JS · PHP · Anglais technique</div>
+    </div>
+  </div>
+
+  <!-- 4. Bas de page validé -->
+  <div style="display:flex;gap:12px;margin-top:16px;align-items:stretch">
+    <div class="panel mono" style="flex:1;display:flex;flex-direction:column;gap:8px">
+      <h4 style="font-family:-apple-system,sans-serif">Secrets</h4>
+      <div class="secret"><span>🔒 PHONE &nbsp;<span class="muted">***</span></span><span class="muted">masqué</span></div>
+      <div class="secret"><span>🔒 EMAIL &nbsp;<span class="muted">***</span></span><span class="btn">Demander l'accès</span></div>
+    </div>
+    <div class="panel mono" style="flex:1;display:flex;flex-direction:column;gap:8px">
+      <h4 style="font-family:-apple-system,sans-serif">Artefacts</h4>
+      <div class="secret"><span>📦 cv-jeremy-devops.pdf</span><span class="btn2">Télécharger</span></div>
+      <div class="secret"><span>🔗 LinkedIn · GitHub</span><span class="btn2">Ouvrir</span></div>
+    </div>
+  </div>
+</div>
+
+<h3 style="margin-top:28px">Sur téléphone, le pipeline devient vertical</h3>
+<div style="display:flex;gap:20px;align-items:flex-start">
+  <div class="phone gh" style="padding:12px 10px;font-size:12px">
+    <div style="display:flex;gap:8px;align-items:center"><div class="photo" style="width:36px;height:36px;font-size:11px">JL</div><div><b>Jeremy L.-R.</b><div class="muted" style="font-size:11px">Admin applicatif / DevOps</div></div></div>
+    <div style="display:flex;gap:4px;margin:10px 0"><div class="kpi" style="padding:6px"><b style="font-size:14px">3 ans</b><span class="muted" style="font-size:10px">XP</span></div><div class="kpi" style="padding:6px"><b style="font-size:14px">5</b><span class="muted" style="font-size:10px">outils K8s</span></div></div>
+    <div class="vjob cur"><span class="run">●</span> Prochaine mission</div>
+    <div class="vjob"><b>Admin applicatif</b><div class="muted">SQLI · ADS · 1 an 5 m ▸</div></div>
+    <div class="vjob"><b>Admin Atlassian</b><div class="muted">Astek → SQLI · 1 an 3 m ▸</div></div>
+    <div class="vjob"><b>DevOps</b><div class="muted">Astek · Navocap · 5 m ▸</div></div>
+    <div class="vjob"><b>Formation</b><div class="muted">Mastère · Licence pro ▸</div></div>
+  </div>
+  <p class="subtitle" style="flex:1">Sur mobile, on inverse le sens : le plus récent en haut, comme dans un fil d'actualité. Chaque job s'ouvre d'un tap. Le bandeau, les tests et les secrets restent dans le même ordre.</p>
+</div>
+
+<script>
+(function(){
+  var D = {
+    ut3:["Licence pro Développement et Qualité des logiciels","Université Toulouse III · 2020",[]],
+    ynov:["Mastère Expert en Développement logiciel mobile & IoT","Ynov Campus Toulouse · 2023",[]],
+    navocap:["Ingénieur DevOps","Astek · Navocap · oct. 2023 → févr. 2024",["Environnement Docker sur les postes des utilisateurs","Image Docker d'environnement Windows Data Center pour les développeurs","Automatisation du déploiement de cet environnement"]],
+    atlassian:["Administrateur Atlassian","Astek → SQLI · ADS · févr. 2024 → mai 2025",["Maintenance et développement : Jira, Confluence, Crowd","Développement d'outils GitLab & Artifactory","Support direct aux utilisateurs","Support et configuration des serveurs"]],
+    sqli:["Administrateur applicatif","SQLI · ADS · mai 2025 → aujourd'hui",["Jira & Confluence Data Center","GitLab, Artifactory, Mattermost self-hosted","Le tout déployé sur Kubernetes"]],
+    readln:["ReadLN, projet personnel","Application de traduction de light novels · en production",["Flask, Postgres, Redis, Docker Compose","CI/CD GitHub Actions, images taguées par commit","Sauvegardes restic chiffrées, déploiement automatisé sur VPS"]],
+    lead:["Prochaine mission","en attente d'un runner…",["Objectif : Lead tech / Admin applicatif senior"]]
+  };
+  var detail = document.getElementById('detail');
+  function show(k){
+    var d = D[k]; detail.textContent = '';
+    var h = document.createElement('div'); h.className='muted'; h.textContent = d[0] + ' · ' + d[1]; detail.appendChild(h);
+    d[2].forEach(function(s){ var e=document.createElement('div'); e.className='step'; e.textContent='✓ '+s; detail.appendChild(e); });
+    document.querySelectorAll('.gh .job').forEach(function(j){ j.classList.toggle('sel', j.dataset.k===k); });
+  }
+  document.querySelectorAll('.gh .job[data-k]').forEach(function(j){ j.addEventListener('click', function(){ show(j.dataset.k); }); });
+  show('atlassian');
+})();
+</script>
