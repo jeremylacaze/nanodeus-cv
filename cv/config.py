@@ -13,6 +13,8 @@ class Config:
         if self.ROLE not in ROLES:
             raise ValueError(f"CV_ROLE inconnu : {self.ROLE!r}")
         self.SECRET_KEY = os.environ.get("SECRET_KEY", "dev-uniquement")
+        # Secret serveur combiné au sel du jour pour les empreintes (cv/journal.py).
+        self.SEL_HMAC = os.environ.get("CV_SEL_HMAC", "dev-uniquement")
         self.TRUST_PROXY = os.environ.get("TRUST_PROXY", "0") == "1"
         # Adresse canonique (og:url) : sans elle, l'en-tête Host de la requête ferait foi.
         self.URL_PUBLIQUE = os.environ.get("CV_URL_PUBLIQUE", "").rstrip("/")

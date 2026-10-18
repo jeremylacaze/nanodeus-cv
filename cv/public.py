@@ -4,6 +4,7 @@ import re
 from flask import (Blueprint, abort, current_app, g, make_response, redirect,
                    render_template, request)
 
+from cv.journal import journaliser
 from cv.langue import suggerer_anglais
 from cv.models import SLUG
 from cv.vue import assembler_vue
@@ -26,6 +27,7 @@ def _page(slug: str | None):
     reponse.vary.add("Accept-Language")
     if vue.noindex:
         reponse.headers["X-Robots-Tag"] = "noindex"
+    journaliser(g.db, request, current_app.config["CV"], "page", vue.slug, g.lang)
     return reponse
 
 
