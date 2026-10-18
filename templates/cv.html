@@ -6,7 +6,7 @@
   <meta property="og:type" content="profile">
   <meta property="og:title" content="{{ vue.nom }}{% if vue.titre %} — {{ vue.titre }}{% endif %}">
   {% if vue.accroche %}<meta property="og:description" content="{{ vue.accroche }}">{% endif %}
-  <meta property="og:url" content="{{ request.base_url }}">
+  <meta property="og:url" content="{{ url_canonique }}">
   <meta property="og:locale" content="{{ 'en_US' if lang == 'en' else 'fr_FR' }}">
 {% endblock %}
 {% block titre %}{{ vue.nom }}{% if vue.titre %} · {{ vue.titre }}{% endif %}{% endblock %}

@@ -24,7 +24,8 @@ def test_un_bouton_et_un_detail_par_job(client):
     assert len(cles) == 6          # 2 formations + 3 postes + ReadLN
     assert all(f'id="detail-{c}"' in html and f'aria-controls="detail-{c}"' in html
                for c in cles)
-    assert html.count('aria-expanded="false"') == 7
+    # Sans JS tous les détails sont lisibles : aria-expanded n'est posé que par le JS.
+    assert "aria-expanded" not in html
     assert 'class="job job--en-cours" data-cle="prochaine"' in html
     assert 'id="detail-prochaine"' in html
     assert "voie voie--parallele" in html

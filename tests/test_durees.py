@@ -24,6 +24,13 @@ def test_duree_en_cours_utilise_aujourdhui():
     assert duree(date(2025, 5, 1), None, "fr", aujourd_hui=date(2026, 10, 18)) == "1 an 5 m"
 
 
+def test_debut_futur_en_cours():
+    # Un poste saisi d'avance (début dans le futur, sans fin) ne plante pas.
+    aujourd_hui = date(2026, 10, 18)
+    assert duree(date(2027, 11, 1), None, "fr", aujourd_hui=aujourd_hui) == "1 m"
+    assert periode(date(2027, 11, 1), None, "fr") == "nov. 2027 → aujourd'hui"
+
+
 def test_periode():
     assert periode(date(2024, 2, 1), date(2025, 5, 1), "fr") == "févr. 2024 → mai 2025"
     assert periode(date(2024, 2, 1), date(2025, 5, 1), "en") == "Feb 2024 → May 2025"

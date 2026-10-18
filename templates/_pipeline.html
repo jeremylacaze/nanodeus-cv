@@ -2,7 +2,7 @@
    button.job[data-cle][aria-controls=detail-<cle>] ↔ section.detail#detail-<cle>,
    tous les détails rendus ici (lisibles sans JS et à l'impression). #}
 {% macro bouton(job, droite) -%}
-<button type="button" class="job" data-cle="{{ job.cle }}" aria-expanded="false" aria-controls="detail-{{ job.cle }}">
+<button type="button" class="job" data-cle="{{ job.cle }}" aria-controls="detail-{{ job.cle }}">
   <span class="job__texte">
     <span class="job__nom"><span class="ok" aria-hidden="true">✓</span> {{ job.intitule }}</span>
     {% if job.organisation %}<span class="job__org">{{ job.organisation }}</span>{% endif %}
@@ -55,7 +55,7 @@
     <span class="lien" aria-hidden="true"></span>
     {% endif %}
     <div class="fin">
-      <button type="button" class="job job--en-cours" data-cle="prochaine" aria-expanded="false" aria-controls="detail-prochaine">
+      <button type="button" class="job job--en-cours" data-cle="prochaine" aria-controls="detail-prochaine">
         <span class="job__texte"><span class="job__nom"><span class="run pulse" aria-hidden="true">●</span> {{ _("Prochaine mission") }}</span>{% if vue.prochaine_mission %}<span class="job__org">{{ vue.prochaine_mission }}</span>{% endif %}</span>
         <span class="job__duree">{{ _("en cours…") }}</span>
       </button>

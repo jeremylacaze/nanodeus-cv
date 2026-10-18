@@ -86,8 +86,19 @@ def _age(naissance: date, aujourd_hui: date) -> int:
     return aujourd_hui.year - naissance.year - (0 if anniversaire_passe else 1)
 
 
+def _missions(entree: Entree, coche: VersionElement, lang: str) -> list[str]:
+    """Surcharge puis stock dans la langue demandée, et seulement ensuite en français :
+    une surcharge écrite en français ne masque pas l'anglais du stock."""
+    for langue in dict.fromkeys((lang, "fr")):
+        for source in (coche, entree):
+            lignes = _lignes(getattr(source, f"missions_{langue}") or "")
+            if lignes:
+                return lignes
+    return []
+
+
 def _job(entree: Entree, coche: VersionElement, lang: str, aujourd_hui: date) -> Job:
-    missions = _lignes(champ(coche, "missions", lang)) or _lignes(champ(entree, "missions", lang))
+    missions = _missions(entree, coche, lang)
     return Job(
         cle=f"e{entree.id}", type=entree.type, voie=entree.voie,
         intitule=champ(entree, "intitule", lang),

@@ -6,8 +6,10 @@ from babel.messages.mofile import write_mo
 from babel.messages.pofile import read_po
 from flask import g, request
 
+from cv.models import SLUG
+
 LANGUES = ("fr", "en")
-_CHEMIN_DE_PAGE = re.compile(r"/[a-z0-9-]{0,40}")
+_CHEMIN_DE_PAGE = re.compile(f"/(?:{SLUG})?")
 
 
 def langue_du_chemin(chemin: str) -> str:

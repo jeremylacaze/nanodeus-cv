@@ -30,6 +30,26 @@ def test_plusieurs_versions_non_par_defaut(session):
     session.flush()
 
 
+@pytest.mark.parametrize("slug", ["Mauvais Slug", "", "a" * 41, "accentué", "../x"])
+def test_slug_invalide_refuse_en_base(session, slug):
+    # Un slug que la route ne pourrait jamais servir est refusé dès l'écriture.
+    session.add(Version(slug=slug, statut="publiee", titre_fr="A"))
+    with pytest.raises(IntegrityError):
+        session.flush()
+
+
+def test_slug_valide_accepte(session):
+    session.add(Version(slug="lead-tech-2", statut="publiee", titre_fr="A"))
+    session.flush()
+
+
+def test_motif_de_slug_partage():
+    # Une seule définition du slug, reprise par les routes et le lien d'autre langue.
+    from cv import langue, public
+    from cv.models import SLUG
+    assert SLUG in public._SLUG.pattern and SLUG in langue._CHEMIN_DE_PAGE.pattern
+
+
 def test_supprimer_version_supprime_ses_elements(session):
     v = Version(slug="a", statut="publiee", par_defaut=True, titre_fr="A")
     session.add(v)

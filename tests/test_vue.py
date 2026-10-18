@@ -74,6 +74,32 @@ def test_surcharge_des_missions_par_version(session):
         "Encadrement", "Formation de l'équipe"]
 
 
+def test_stock_anglais_avant_surcharge_francaise(session):
+    # Une surcharge écrite en français seulement ne masque pas l'anglais du stock.
+    f.profil(session)
+    e = f.entree(session, missions_fr="Support", missions_en="Support desk")
+    v = f.version(session)
+    f.cocher(session, v, e, missions_fr="Encadrement")
+    assert assembler_vue(session, "devops", "en").postes[0].missions == ["Support desk"]
+    assert assembler_vue(session, "devops", "fr").postes[0].missions == ["Encadrement"]
+
+
+def test_surcharge_anglaise_avant_tout(session):
+    f.profil(session)
+    e = f.entree(session, missions_fr="Support", missions_en="Support desk")
+    v = f.version(session)
+    f.cocher(session, v, e, missions_fr="Encadrement", missions_en="Team lead")
+    assert assembler_vue(session, "devops", "en").postes[0].missions == ["Team lead"]
+
+
+def test_surcharge_francaise_si_aucun_anglais(session):
+    f.profil(session)
+    e = f.entree(session, missions_fr="Support", missions_en=None)
+    v = f.version(session)
+    f.cocher(session, v, e, missions_fr="Encadrement")
+    assert assembler_vue(session, "devops", "en").postes[0].missions == ["Encadrement"]
+
+
 def test_missions_du_stock_sans_surcharge(session):
     f.profil(session)
     e = f.entree(session, missions_fr="Support\n\n  Maintenance  \n")

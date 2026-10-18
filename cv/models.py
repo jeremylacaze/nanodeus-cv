@@ -16,6 +16,8 @@ TYPES_ENTREE = ("poste", "formation", "projet")
 VOIES = ("principale", "parallele")
 STATUTS = ("brouillon", "publiee", "non_listee")
 TYPES_ELEMENT = ("entree", "soft_skill", "competence", "chiffre")
+# Seule définition du slug d'une version (/<slug>) : routes, lien d'autre langue, base.
+SLUG = r"[a-z0-9-]{1,40}"
 
 
 def _dans(colonne: str, valeurs: tuple[str, ...]) -> CheckConstraint:
@@ -100,6 +102,9 @@ class Version(Base):
     __tablename__ = "version"
     __table_args__ = (
         _dans("statut", STATUTS),
+        # Traduction SQLite de SLUG : 1 à 40 caractères parmi a-z, 0-9 et « - ».
+        CheckConstraint("length(slug) BETWEEN 1 AND 40 AND slug NOT GLOB '*[^a-z0-9-]*'",
+                        name="ck_slug"),
         # Une seule version par défaut (servie sur /).
         Index("uq_version_par_defaut", "par_defaut", unique=True,
               sqlite_where=text("par_defaut = 1")),

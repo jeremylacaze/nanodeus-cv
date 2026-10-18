@@ -73,6 +73,13 @@ h1 { font-size: 22px; line-height: 1.25; }
 /* Pipeline : graphe de gauche à droite */
 .pipeline { margin-top: 22px; }
 .graphe { display: flex; align-items: center; overflow-x: auto; padding: 2px 2px 6px; }
+/* Tablette : fondu sur le bord où le graphe déborde encore (classes posées par pipeline.js). */
+.graphe.deborde-g { -webkit-mask-image: linear-gradient(to right, transparent, #000 40px); mask-image: linear-gradient(to right, transparent, #000 40px); }
+.graphe.deborde-d { -webkit-mask-image: linear-gradient(to left, transparent, #000 40px); mask-image: linear-gradient(to left, transparent, #000 40px); }
+.graphe.deborde-g.deborde-d {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent);
+}
 .graphe ol { list-style: none; margin: 0; padding: 0; }
 .graphe .groupe {
   flex: none; display: flex; flex-direction: column; gap: 6px;
@@ -160,7 +167,7 @@ a.secret:hover, a.secret:focus-visible { border-color: var(--sel); }
   .voie--principale li { display: block; }
   .voie--parallele { flex-direction: column; align-items: stretch; gap: 0; }
   .voie--parallele > ol { flex-direction: column-reverse; }
-  .graphe .groupe { flex-direction: column-reverse; border: 0; border-radius: 0; padding: 0; background: none; }
+  .graphe .groupe { flex-direction: column-reverse; border: 0; border-radius: 0; padding: 0; }
   /* Seuls les jalons de la frise, pas les missions des détails déplacés dedans. */
   .groupe > li, .voie--principale > li, .voie--parallele > ol > li, .fin {
     position: relative; margin-left: 7px; padding: 0 0 10px 18px; border-left: 2px solid var(--bord);
@@ -191,7 +198,7 @@ a.secret:hover, a.secret:focus-visible { border-color: var(--sel); }
   .langues, .suggestion-langue, .btn-contact { display: none !important; }
   .details[hidden], .detail[hidden] { display: block !important; }
   .pulse { animation: none; }
-  .graphe { overflow: visible; flex-wrap: wrap; }
+  .graphe { overflow: visible; flex-wrap: wrap; -webkit-mask-image: none; mask-image: none; }
   .job[aria-expanded="true"] { box-shadow: none; border-color: var(--bord); }
   .detail, .panneau, .kpi { break-inside: avoid; }
 }

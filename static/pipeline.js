@@ -43,4 +43,21 @@
   else if (mobile.addListener) { mobile.addListener(auChangement); }
 
   appliquer();
+
+  // Tablette : le graphe déborde à droite ; on l'amène sur le job choisi (le plus récent)
+  // et la prochaine mission, sinon le visiteur arrive sur les formations les plus anciennes.
+  // Un fondu signale le côté où il reste du contenu.
+  var graphe = pipeline.querySelector(".graphe");
+  function bords() {
+    var deborde = !mobile.matches && graphe.scrollWidth > graphe.clientWidth + 1;
+    graphe.classList.toggle("deborde-g", deborde && graphe.scrollLeft > 1);
+    graphe.classList.toggle("deborde-d", deborde &&
+      graphe.scrollLeft + graphe.clientWidth < graphe.scrollWidth - 1);
+  }
+  if (graphe) {
+    if (!mobile.matches) { graphe.scrollLeft = graphe.scrollWidth; }
+    graphe.addEventListener("scroll", bords, { passive: true });
+    window.addEventListener("resize", bords);
+    bords();
+  }
 }());

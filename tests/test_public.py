@@ -55,6 +55,33 @@ def test_en_sans_barre_redirige(client):
     assert r.status_code in (301, 308) and r.headers["Location"].endswith("/en/")
 
 
+def test_en_sans_barre_garde_les_parametres(client):
+    # Un QR code imprimé vers /en?src=qr ne doit pas perdre sa source.
+    assert client.get("/en?src=qr").headers["Location"].endswith("/en/?src=qr")
+
+
+@pytest.mark.parametrize("url", ["/", "/devops", "/en/devops"])
+def test_vary_accept_language(client, url):
+    # Le bandeau « View in English » dépend de cet en-tête : un cache doit le savoir.
+    assert "Accept-Language" in client.get(url).headers.get("Vary", "")
+
+
+def test_url_publique_canonique(fabrique_app, monkeypatch):
+    monkeypatch.setenv("CV_URL_PUBLIQUE", "https://cv.nanodeus.com/")
+    client = fabrique_app().test_client()
+    corps = client.get("/en/devops?src=qr", headers={"Host": "evil.example"}).get_data(as_text=True)
+    assert '<meta property="og:url" content="https://cv.nanodeus.com/en/devops">' in corps
+    assert "evil.example" not in corps
+
+
+@pytest.mark.parametrize("valeur", ["cv.nanodeus.com", "javascript:alert(1)", "ftp://x"])
+def test_url_publique_invalide_refusee(monkeypatch, valeur):
+    from cv.config import Config
+    monkeypatch.setenv("CV_URL_PUBLIQUE", valeur)
+    with pytest.raises(ValueError):
+        Config()
+
+
 def test_non_listee_noindex(client):
     r = client.get("/lead-tech")
     assert r.headers["X-Robots-Tag"] == "noindex" and b'name="robots"' in r.data
