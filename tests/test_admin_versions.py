@@ -130,6 +130,15 @@ def test_apercu_en_anglais(admin):
     assert '<html lang="fr">' in corps and f"/admin/versions/{id_}/apercu?lang=en" in corps
 
 
+def test_apercu_lien_pdf_admin(admin):
+    id_ = _id(admin, "devops")
+    corps = admin.get(f"/admin/versions/{id_}/apercu").get_data(as_text=True)
+    assert f'href="/admin/versions/{id_}/cv.pdf?lang=fr"' in corps
+    assert 'href="/devops.pdf"' not in corps
+    corps = admin.get(f"/admin/versions/{id_}/apercu?lang=en").get_data(as_text=True)
+    assert f'href="/admin/versions/{id_}/cv.pdf?lang=en"' in corps
+
+
 def test_pas_de_bandeau_d_apercu_en_public(fabrique_app):
     corps = fabrique_app().test_client().get("/devops").get_data(as_text=True)
     assert "Aperçu —" not in corps and 'class="apercu"' not in corps

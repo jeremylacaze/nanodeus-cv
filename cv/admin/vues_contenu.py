@@ -296,4 +296,5 @@ def version_apercu(id_):
     return render_template("cv.html", vue=vue, apercu=True, suggestion_en=False,
                            brouillon=version.statut == "brouillon",
                            url_canonique="",
+                           url_pdf=f"/admin/versions/{version.id}/cv.pdf?lang={g.lang}",
                            url_autre_langue=f"/admin/versions/{version.id}/apercu?lang={autre}")

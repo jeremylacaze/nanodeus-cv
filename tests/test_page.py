@@ -86,16 +86,29 @@ def test_secrets_masques(client):
     assert 'class="btn-contact" href="/devops/contact" data-action="demander-acces"' in html
 
 
-def test_artefacts_absents_sans_liens(client):
-    assert 'class="artefacts' not in _html(client)
+def _artefacts(html):
+    return re.search(r'<section class="artefacts.*?</section>', html, re.S).group(0)
+
+
+def test_artefacts_toujours_la_avec_le_pdf_en_premier(client):
+    # Ni LinkedIn ni GitHub dans le profil amorcé : le PDF suffit à montrer la section.
+    section = _artefacts(_html(client))
+    premier = re.search(r'<a [^>]*href="([^"]+)"', section).group(1)
+    assert premier == "/devops.pdf" and "CV · PDF" in section and "Télécharger" in section
+    assert "linkedin" not in section.lower()
+
+
+def test_artefacts_pdf_en_anglais(client):
+    section = _artefacts(_html(client, "/en/devops"))
+    assert 'href="/en/devops.pdf"' in section and "Download" in section
 
 
 def test_artefacts_avec_lien(fabrique_app):
     def liens(s):
         s.get(Profil, 1).linkedin_url = "https://www.linkedin.com/in/exemple"
-    html = _html(fabrique_app(modifier=liens).test_client())
-    assert 'href="https://www.linkedin.com/in/exemple"' in html
-    assert ".pdf" not in html        # le PDF vient au plan 3
+    section = _artefacts(_html(fabrique_app(modifier=liens).test_client()))
+    assert section.index('href="/devops.pdf"') < section.index(
+        'href="https://www.linkedin.com/in/exemple"')
 
 
 def test_open_graph(client):

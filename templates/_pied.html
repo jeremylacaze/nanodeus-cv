@@ -13,13 +13,12 @@
       {%- endif %}
     </div>
   </section>
-  {% if vue.linkedin_url or vue.github_url %}
   <section class="artefacts panneau" aria-labelledby="titre-artefacts">
     <h2 id="titre-artefacts">{{ _("Artefacts") }}</h2>
+    <a class="secret mono" href="{{ url_pdf }}" download><span><span aria-hidden="true">📄</span> CV · PDF</span><span class="btn-secondaire">{{ _("Télécharger") }}</span></a>
     {% for nom, url in [("LinkedIn", vue.linkedin_url), ("GitHub", vue.github_url)] if url %}
     <a class="secret mono" href="{{ url }}" rel="me noopener" target="_blank"><span><span aria-hidden="true">🔗</span> {{ nom }}</span><span class="btn-secondaire">{{ _("Ouvrir") }}</span></a>
     {% endfor %}
   </section>
-  {% endif %}
 </footer>
 <p class="confidentialite muted">{{ _("Ce site ne dépose aucun cookie. Chaque visite est notée sans votre adresse IP : date, page, source (LinkedIn, QR code…), type d'appareil et une empreinte pseudonyme renouvelée chaque jour. Ces visites sont effacées après 6 mois. Une demande de contact (email, message, nom et entreprise si indiqués) est gardée jusqu'à ce que Jeremy la supprime.") }}</p>

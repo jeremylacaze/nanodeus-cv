@@ -29,6 +29,7 @@ def _page(slug: str | None):
     reponse = make_response(render_template(
         "cv.html", vue=vue, suggestion_en=suggerer_anglais(request),
         url_canonique=racine + request.path,
+        url_pdf=f"{'/en' if g.lang == 'en' else ''}/{vue.slug}.pdf",
         url_og_image=racine + vue.photo_url if vue.photo_url else ""))
     # Le bandeau « View in English » dépend de cet en-tête : un cache doit le savoir.
     reponse.vary.add("Accept-Language")
