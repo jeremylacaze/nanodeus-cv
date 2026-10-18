@@ -5,3 +5,4 @@ __pycache__/
 .superpowers/
 .pytest_cache/
 .ruff_cache/
+translations/messages.pot

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block meta %}{% if vue.noindex %}<meta name="robots" content="noindex">{% endif %}{% endblock %}
+{% block titre %}{{ vue.nom }} · {{ vue.titre }}{% endblock %}
+{% block contenu %}
+  {% if suggestion_en %}
+  {# Volontairement en anglais sur la page française : c'est la proposition de bascule. #}
+  <p class="suggestion-langue" lang="en"><a href="{{ url_autre_langue }}" hreflang="en">View in English</a></p>
+  {% endif %}
+  <main>
+    <h1>{{ vue.nom }}</h1>
+    <p>{{ vue.titre }}</p>
+  </main>
+{% endblock %}

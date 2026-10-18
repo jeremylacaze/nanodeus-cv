@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  {% block meta %}{% endblock %}
+  <title>{% block titre %}{% endblock %}</title>
+</head>
+<body>
+  <nav class="langues" aria-label="{{ _('Langue') }}">
+    {% if lang == "en" %}<a href="{{ url_autre_langue }}" hreflang="fr" lang="fr">FR</a>
+    {% else %}<a href="{{ url_autre_langue }}" hreflang="en" lang="en">EN</a>{% endif %}
+  </nav>
+  {% block contenu %}{% endblock %}
+</body>
+</html>
