@@ -65,8 +65,8 @@ def create_app(config: Config | None = None) -> Flask:
     if config.ROLE == "admin":
         from cv.admin.acces import init_acces
         init_acces(app)
-        # Le profil et le stock tiennent en quelques dizaines de Kio.
-        app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024
+        # Le profil tient en quelques Kio, mais une photo de téléphone dépasse le Mio.
+        app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
 
     @app.before_request
     def _ouvrir_session():

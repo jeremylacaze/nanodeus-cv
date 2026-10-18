@@ -1,0 +1,75 @@
+<!doctype html>
+{#- PDF du CV, rendu par WeasyPrint : document autonome, rien n'est cherché au-dehors.
+    Règle n° 1 : téléphone et email n'apparaissent que si `coordonnees` est fourni,
+    c'est-à-dire dans le PDF complet de l'admin. #}
+{% set initiales = (vue.nom.split() | map("first") | join | upper)[:2] %}
+{% set morceaux = [vue.localisation] | select | list %}
+{% if vue.age %}{% set morceaux = morceaux + [ngettext("%(num)s an", "%(num)s ans", vue.age)] %}{% endif %}
+{% if vue.permis %}{% set morceaux = morceaux + [_("Permis %(permis)s", permis=vue.permis)] %}{% endif %}
+{% macro job_pdf(job) -%}
+{% set org = (job.organisation ~ " · " ~ job.via) if job.via and job.organisation else (job.organisation or job.via) %}
+<div class="job">
+  <div class="job__tete">
+    <p class="job__nom"><span class="ok">✓</span> {{ job.intitule }}{% if org %}<span class="job__org"> — {{ org }}</span>{% endif %}</p>
+    <p class="job__quand mono">{{ job.annee if job.type == "formation" else job.periode ~ " · " ~ job.duree }}</p>
+  </div>
+  {% if job.missions %}<ul>{% for mission in job.missions %}<li>{{ mission }}</li>{% endfor %}</ul>{% endif %}
+  {% if job.technos %}<p class="technos mono">› {{ job.technos }}</p>{% endif %}
+</div>
+{%- endmacro %}
+<html lang="{{ lang }}">
+<head>
+  <meta charset="utf-8">
+  <title>{{ vue.nom }}{% if vue.titre %} · {{ vue.titre }}{% endif %}</title>
+  <meta name="author" content="{{ vue.nom }}">
+  <style>{% include "pdf.css" %}</style>
+</head>
+<body>
+  <header class="entete">
+    {% if photo_uri %}<img class="photo" src="{{ photo_uri }}" alt="">
+    {% else %}<div class="photo">{{ initiales }}</div>{% endif %}
+    <div class="identite">
+      <h1>{{ vue.nom }}</h1>
+      {% if vue.titre %}<p class="titre">{{ vue.titre }}</p>{% endif %}
+      {% if morceaux or vue.ouvert %}<p class="meta">
+        {{- morceaux | join(" · ") -}}
+        {%- if vue.ouvert %}{% if morceaux %} · {% endif %}{{ _("ouvert aux opportunités") }}{% endif -%}
+      </p>{% endif %}
+      {% if coordonnees %}<p class="coordonnees mono">{{ [coordonnees[0], coordonnees[1]] | select | join("  ·  ") }}</p>{% endif %}
+    </div>
+  </header>
+  {% if vue.accroche %}<p class="accroche">{{ "« " if lang == "fr" else "“" }}{{ vue.accroche }}{{ " »" if lang == "fr" else "”" }}</p>{% endif %}
+  {% if vue.chiffres %}
+  <ul class="chiffres">{% for valeur, libelle in vue.chiffres %}<li><b>{{ valeur }}</b> {{ libelle }}</li>{% endfor %}</ul>
+  {% endif %}
+
+  {% if vue.postes %}
+  <section><h2>{{ _("Expériences") }}</h2>{% for job in vue.postes | reverse %}{{ job_pdf(job) }}{% endfor %}</section>
+  {% endif %}
+  {% if vue.projets %}
+  <section><h2>{{ _("Projets personnels") }}</h2>{% for job in vue.projets | reverse %}{{ job_pdf(job) }}{% endfor %}</section>
+  {% endif %}
+  {% if vue.formations %}
+  <section><h2>{{ _("Formations") }}</h2>{% for job in vue.formations | reverse %}{{ job_pdf(job) }}{% endfor %}</section>
+  {% endif %}
+  {% if vue.soft_skills %}
+  <section><h2>{{ _("Soft skills") }}</h2>
+    <ul class="skills">{% for nom, preuve in vue.soft_skills %}<li><span class="ok">✓</span> <b>{{ nom }}</b>{{ " : " if lang == "fr" else ": " }}{{ preuve }}</li>{% endfor %}</ul>
+  </section>
+  {% endif %}
+  {% if vue.competences or vue.interets %}
+  <section class="stack"><h2>{{ _("Stack") }}</h2>
+    <dl>
+      {% for categorie, noms in vue.competences.items() %}<dt>{{ categorie }}</dt><dd>{{ noms | join(" · ") }}</dd>{% endfor %}
+      {% if vue.interets %}<dt>{{ _("Centres d'intérêt") }}</dt><dd>{{ vue.interets | join(" · ") }}</dd>{% endif %}
+    </dl>
+  </section>
+  {% endif %}
+
+  <footer class="pied">
+    <img class="qr" src="{{ qr_uri }}" alt="">
+    <p>{% if coordonnees %}{{ _("Version en ligne :") }}{% else %}{{ _("Pour me contacter, demandez l'accès sur") }}{% endif %}
+      <a href="{{ lien }}">{{ adresse }}</a></p>
+  </footer>
+</body>
+</html>

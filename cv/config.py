@@ -9,6 +9,7 @@ MODES_TLS = ("starttls", "ssl", "aucun")
 # Tailscale (IPv4 CGNAT et IPv6 ULA du tailnet), plus le loopback pour ./dev.sh.
 RESEAUX_PAR_DEFAUT = "100.64.0.0/10,fd7a:115c:a1e0::/48,127.0.0.0/8,::1/128"
 HOTES_PAR_DEFAUT = "localhost,127.0.0.1,::1"
+URL_PAR_DEFAUT = "https://cv.nanodeus.com"
 
 
 def lire_reseaux(texte: str) -> tuple:
@@ -21,6 +22,9 @@ def lire_reseaux(texte: str) -> tuple:
 class Config:
     def __init__(self):
         self.DATA_DIR = Path(os.environ.get("CV_DATA_DIR", "./data"))
+        # Hors du dépôt : la photo est personnelle, le cache se reconstruit.
+        self.DOSSIER_PHOTOS = self.DATA_DIR / "photos"
+        self.DOSSIER_CACHE_PDF = self.DATA_DIR / "cache-pdf"
         self.ROLE = os.environ.get("CV_ROLE", "public")
         if self.ROLE not in ROLES:
             raise ValueError(f"CV_ROLE inconnu : {self.ROLE!r}")
@@ -62,6 +66,12 @@ class Config:
         self.EMAIL_EXPEDITEUR = os.environ.get("CV_EMAIL_EXPEDITEUR", "cv@nanodeus.com")
         # Boîte perso de Jeremy : posée sur le serveur seulement, jamais dans le dépôt.
         self.EMAIL_DESTINATAIRE = os.environ.get("CV_EMAIL_DESTINATAIRE", "")
+
+    @property
+    def URL_SITE(self) -> str:
+        """Adresse imprimée (QR, PDF) : jamais l'hôte de la requête, qui serait en admin
+        celle du tailnet."""
+        return self.URL_PUBLIQUE or URL_PAR_DEFAUT
 
     @property
     def DATABASE_URL(self) -> str:

@@ -8,8 +8,26 @@
   <div class="actions">
     <a href="/admin/versions/{{ version.id }}/apercu">Aperçu FR</a>
     <a href="/admin/versions/{{ version.id }}/apercu?lang=en">Aperçu EN</a>
+    <a href="/admin/versions/{{ version.id }}/cv.pdf">PDF public FR</a>
+    <a href="/admin/versions/{{ version.id }}/cv.pdf?lang=en">PDF public EN</a>
+    <a href="/admin/versions/{{ version.id }}/cv.pdf?complet=1">PDF complet FR</a>
+    <a href="/admin/versions/{{ version.id }}/cv.pdf?lang=en&amp;complet=1">PDF complet EN</a>
     {% if version.par_defaut %}<span class="badge badge--ok">par défaut</span>{% endif %}
   </div>
+  <section id="qr" class="qr">
+    <h2>QR code</h2>
+    <img src="/admin/versions/{{ version.id }}/qr.svg" alt="QR code de la version en français" width="200" height="200">
+    <p class="muted">Pointe vers l'adresse publique avec <code>?src=qr</code> : les visites
+      venues du papier sont comptées à part.</p>
+    <ul>
+      {% for lang, libelle in (("fr", "FR"), ("en", "EN")) %}
+      {% set suffixe = "?lang=en&telecharger=1" if lang == "en" else "?telecharger=1" %}
+      <li>{{ libelle }} : <code>{{ urls_qr[lang] }}</code> —
+        <a href="/admin/versions/{{ version.id }}/qr.svg{{ suffixe }}">SVG</a> ·
+        <a href="/admin/versions/{{ version.id }}/qr.png{{ suffixe }}">PNG</a></li>
+      {% endfor %}
+    </ul>
+  </section>
   {% endif %}
   {% if erreurs %}<p class="message alerte" role="alert">Le formulaire contient des erreurs : rien n'a été enregistré.</p>{% endif %}
   <form method="post" action="/admin/versions/{{ version.id if version else 'nouvelle' }}">

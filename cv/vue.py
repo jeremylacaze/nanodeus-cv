@@ -8,6 +8,7 @@ from datetime import date
 from sqlalchemy import select
 
 from cv.durees import duree, periode
+from cv.medias import chemin_photo
 from cv.models import (Chiffre, Competence, Entree, Profil, SoftSkill, Version,
                        VersionElement)
 
@@ -58,6 +59,7 @@ class VueCV:
     localisation: str
     age: int | None
     ouvert: bool
+    permis: str  # PDF seulement : la page web ne l'affiche pas
     photo_url: str | None
     chiffres: list[tuple[str, str]]
     formations: list[Job]
@@ -112,8 +114,11 @@ def _job(entree: Entree, coche: VersionElement, lang: str, aujourd_hui: date) ->
     )
 
 
-def assembler_vue(session, slug: str | None, lang: str,
-                  aujourd_hui: date | None = None, apercu: bool = False) -> VueCV | None:
+def assembler_vue(session, slug: str | None, lang: str, aujourd_hui: date | None = None,
+                  apercu: bool = False, prefixe_medias: str = "", config=None) -> VueCV | None:
+    """`prefixe_medias` : "/admin" pour l'aperçu, qui sert la photo depuis l'admin.
+    Avec `config`, la photo n'est annoncée que si son fichier existe (base restaurée
+    sans photos/ : les initiales plutôt qu'une image cassée)."""
     version = version_publique(session, slug, apercu)
     if version is None:
         return None
@@ -148,11 +153,16 @@ def assembler_vue(session, slug: str | None, lang: str,
     if profil.afficher_age and profil.date_naissance:
         age = _age(profil.date_naissance, aujourd_hui)
 
+    photo_url = None
+    if profil.photo_fichier and (config is None or chemin_photo(config, profil.photo_fichier)):
+        photo_url = f"{prefixe_medias}/photo/{profil.photo_fichier}"
+
     return VueCV(
         slug=version.slug, lang=lang, noindex=version.statut == "non_listee",
         nom=profil.nom_complet or "", titre=champ(version, "titre", lang),
         accroche=champ(version, "accroche", lang), localisation=profil.localisation or "",
-        age=age, ouvert=bool(profil.ouvert_opportunites), photo_url=None,
+        age=age, ouvert=bool(profil.ouvert_opportunites),
+        permis=(profil.permis or "").strip(), photo_url=photo_url,
         chiffres=[(champ(c, "valeur", lang), champ(c, "libelle", lang))
                   for c, _ in charger(Chiffre, "chiffre")],
         formations=[j for j in jobs if j.type == "formation"],

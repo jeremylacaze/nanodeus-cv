@@ -43,7 +43,7 @@ def test_creer_version(admin):
 
 
 @pytest.mark.parametrize("slug", ["", "Acme", "a b", "a_b", "x" * 41, "en", "contact",
-                                  "static", "admin", "devops"])
+                                  "static", "admin", "photo", "devops"])
 def test_slug_refuse(admin, slug):
     r = admin.post("/admin/versions/nouvelle", headers=ORIGINE,
                    data={"slug": slug, "statut": "publiee", "titre_fr": "T"})
@@ -128,6 +128,15 @@ def test_apercu_en_anglais(admin):
     assert '<html lang="en">' in corps and f"/admin/versions/{id_}/apercu?lang=fr" in corps
     corps = admin.get(f"/admin/versions/{id_}/apercu?lang=xx").get_data(as_text=True)
     assert '<html lang="fr">' in corps and f"/admin/versions/{id_}/apercu?lang=en" in corps
+
+
+def test_apercu_lien_pdf_admin(admin):
+    id_ = _id(admin, "devops")
+    corps = admin.get(f"/admin/versions/{id_}/apercu").get_data(as_text=True)
+    assert f'href="/admin/versions/{id_}/cv.pdf?lang=fr"' in corps
+    assert 'href="/devops.pdf"' not in corps
+    corps = admin.get(f"/admin/versions/{id_}/apercu?lang=en").get_data(as_text=True)
+    assert f'href="/admin/versions/{id_}/cv.pdf?lang=en"' in corps
 
 
 def test_pas_de_bandeau_d_apercu_en_public(fabrique_app):

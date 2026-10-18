@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: nanodeus-cv VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-18 23:42+0200\n"
+"POT-Creation-Date: 2026-10-19 00:06+0200\n"
 "PO-Revision-Date: 2026-10-18 19:17+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -111,6 +111,13 @@ msgstr "Page not found."
 msgid "Parcours"
 msgstr "Career"
 
+#, python-format
+msgid "Permis %(permis)s"
+msgstr "Driving licence %(permis)s"
+
+msgid "Pour me contacter, demandez l'accès sur"
+msgstr "To contact me, request access at"
+
 msgid "Prochaine mission"
 msgstr "Next mission"
 
@@ -129,6 +136,9 @@ msgstr "Back to the résumé"
 msgid "Secrets"
 msgstr "Secrets"
 
+msgid "Soft skills"
+msgstr "Soft skills"
+
 msgid "Stack"
 msgstr "Stack"
 
@@ -139,6 +149,9 @@ msgstr "Tests · soft skills (%(n)s/%(n)s passed)"
 msgid "Trop de demandes pour le moment. Réessayez plus tard."
 msgstr "Too many requests for now. Please try again later."
 
+msgid "Télécharger"
+msgstr "Download"
+
 msgid "Une erreur est survenue"
 msgstr "Something went wrong"
 
@@ -148,6 +161,9 @@ msgstr "Something went wrong. Your request may have been saved: please wait a fe
 #, python-format
 msgid "Une seule ligne, %(n)s caractères au plus."
 msgstr "A single line, %(n)s characters at most."
+
+msgid "Version en ligne :"
+msgstr "Online version:"
 
 msgid "Votre email"
 msgstr "Your email"

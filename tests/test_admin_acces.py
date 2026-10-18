@@ -80,8 +80,8 @@ def test_message_ok_connu_seulement(admin):
     assert "<b>x</b>" not in admin.get("/admin/?ok=<b>x</b>").get_data(as_text=True)
 
 
-def test_corps_jusqu_a_un_mio(admin):
-    assert admin.application.config["MAX_CONTENT_LENGTH"] == 1024 * 1024
+def test_corps_jusqu_a_16_mio(admin):
+    assert admin.application.config["MAX_CONTENT_LENGTH"] == 16 * 1024 * 1024
 
 
 @pytest.mark.parametrize("hote, attendu", [

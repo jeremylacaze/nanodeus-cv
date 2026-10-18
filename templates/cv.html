@@ -7,6 +7,7 @@
   <meta property="og:title" content="{{ vue.nom }}{% if vue.titre %} — {{ vue.titre }}{% endif %}">
   {% if vue.accroche %}<meta property="og:description" content="{{ vue.accroche }}">{% endif %}
   <meta property="og:url" content="{{ url_canonique }}">
+  {% if url_og_image %}<meta property="og:image" content="{{ url_og_image }}">{% endif %}
   <meta property="og:locale" content="{{ 'en_US' if lang == 'en' else 'fr_FR' }}">
 {% endblock %}
 {% block titre %}{{ vue.nom }}{% if vue.titre %} · {{ vue.titre }}{% endif %}{% endblock %}

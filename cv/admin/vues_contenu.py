@@ -1,16 +1,24 @@
 """Admin : édition du profil, du stock et des versions."""
 import flask_babel
-from flask import abort, g, redirect, render_template, request
+from flask import abort, current_app, g, make_response, redirect, render_template, request
 from sqlalchemy import select
+from werkzeug.exceptions import RequestEntityTooLarge
 
 from cv.admin import bp
 from cv.admin.formulaires import MAX_TEXTE, Champ, appliquer, lire, valeurs_de
 from cv.admin.stock import PAR_ELEMENT, TYPES, supprimer_element
 from cv.admin.versions import (CHAMPS_VERSION, composer, definir_par_defaut,
                                elements_du_stock, supprimer_version, verifier_version)
+from cv.medias import (FORMATS_QR, PhotoInvalide, effacer_photo, enregistrer_photo,
+                       lire_photo, qr, servir_photo, traiter_photo, url_version)
 from cv.models import Profil, Version
+from cv.pdf import html_pdf, pdf_en_cache, rendre_pdf, vider_cache
 from cv.vue import assembler_vue
 
+ERREUR_PHOTO = ("Ce fichier n'est pas une photo lisible (JPEG, PNG ou WEBP, "
+                "40 mégapixels au plus).")
+ERREUR_PHOTO_LOURDE = "Cette photo dépasse 16 Mio : envoyez une version plus légère."
+ERREUR_SANS_PROFIL = "Enregistrez d'abord le profil, puis ajoutez la photo."
 PRIVE = "Privé : sert seulement au PDF complet, jamais au site public."
 
 CHAMPS_PROFIL = (
@@ -64,10 +72,60 @@ def profil():
             appliquer(actuel, valeurs)
             g.db.commit()
             return ok("/admin/profil")
-        return render_template("admin/profil.html", liste=CHAMPS_PROFIL,
-                               valeurs=request.form.to_dict(), erreurs=erreurs), 400
-    return render_template("admin/profil.html", liste=CHAMPS_PROFIL,
-                           valeurs=valeurs_de(actuel, CHAMPS_PROFIL), erreurs={})
+        return _page_profil(actuel, request.form.to_dict(), erreurs, statut=400)
+    return _page_profil(actuel, valeurs_de(actuel, CHAMPS_PROFIL), {})
+
+
+def _page_profil(actuel: Profil | None, valeurs: dict, erreurs: dict,
+                 erreur_photo: str = "", statut: int = 200):
+    return render_template("admin/profil.html", liste=CHAMPS_PROFIL, valeurs=valeurs,
+                           erreurs=erreurs, photo=actuel.photo_fichier if actuel else None,
+                           erreur_photo=erreur_photo), statut
+
+
+@bp.post("/profil/photo")
+def profil_photo():
+    actuel = g.db.get(Profil, 1)
+
+    def refus(message, statut):
+        return _page_profil(actuel, valeurs_de(actuel, CHAMPS_PROFIL), {}, message, statut)
+
+    if actuel is None:
+        return refus(ERREUR_SANS_PROFIL, 400)
+    try:
+        fichier = request.files.get("photo")
+    except RequestEntityTooLarge:
+        return refus(ERREUR_PHOTO_LOURDE, 413)
+    try:
+        if fichier is None:
+            raise PhotoInvalide
+        donnees = traiter_photo(fichier.read())
+    except PhotoInvalide:
+        return refus(ERREUR_PHOTO, 400)
+    config = current_app.config["CV"]
+    nom = enregistrer_photo(config.DOSSIER_PHOTOS, donnees)
+    ancien, actuel.photo_fichier = actuel.photo_fichier, nom
+    g.db.commit()
+    if ancien != nom:
+        effacer_photo(config, ancien)
+        vider_cache(config.DOSSIER_CACHE_PDF)
+    return ok("/admin/profil", "photo-enregistree")
+
+
+@bp.post("/profil/photo/supprimer")
+def profil_photo_supprimer():
+    actuel = g.db.get(Profil, 1)
+    if actuel is not None and actuel.photo_fichier:
+        ancien, actuel.photo_fichier = actuel.photo_fichier, None
+        g.db.commit()
+        effacer_photo(current_app.config["CV"], ancien)
+        vider_cache(current_app.config["CV"].DOSSIER_CACHE_PDF)
+    return ok("/admin/profil", "photo-supprimee")
+
+
+@bp.get("/photo/<nom>")
+def photo(nom):
+    return servir_photo(g.db, current_app.config["CV"], nom)
 
 
 def _type_stock(cle: str):
@@ -137,8 +195,11 @@ def _page_version(version: Version | None, valeurs: dict, erreurs: dict,
                   statut: int = 200):
     """Page d'une version. `composition` : valeurs soumises à réafficher après une erreur."""
     lignes = elements_du_stock(g.db, version) if version else {}
+    config = current_app.config["CV"]
+    urls_qr = {lang: url_version(config, version.slug, lang, "qr")
+               for lang in ("fr", "en")} if version else {}
     return render_template(
-        "admin/version.html", version=version, champs_version=CHAMPS_VERSION,
+        "admin/version.html", version=version, champs_version=CHAMPS_VERSION, urls_qr=urls_qr,
         valeurs=valeurs, erreurs=erreurs, lignes=lignes, composition=composition,
         erreurs_composition=erreurs_composition or {}, titres={
             te: t.titre for te, t in PAR_ELEMENT.items()}), statut
@@ -193,15 +254,61 @@ def version_supprimer(id_):
     return ok("/admin/versions", "supprime" if fait else "defaut-protege")
 
 
+@bp.get("/versions/<int:id_>/qr.<fmt>")
+def version_qr(id_, fmt):
+    """QR code vers l'adresse publique, brouillon compris : on prépare l'impression."""
+    if fmt not in FORMATS_QR:
+        abort(404)
+    version = _version(id_)
+    lang = "en" if request.args.get("lang") == "en" else "fr"
+    reponse = make_response(qr(url_version(current_app.config["CV"], version.slug, lang, "qr"),
+                               fmt))
+    reponse.mimetype = FORMATS_QR[fmt]
+    if request.args.get("telecharger") == "1":
+        nom = f"qr-{version.slug}{'-en' if lang == 'en' else ''}.{fmt}"
+        reponse.headers["Content-Disposition"] = f'attachment; filename="{nom}"'
+    return reponse
+
+
+def _langue_demandee() -> str:
+    g.lang = "en" if request.args.get("lang") == "en" else "fr"
+    flask_babel.refresh()  # la langue de Babel suit g.lang
+    return g.lang
+
+
+@bp.get("/versions/<int:id_>/cv.pdf")
+def version_pdf(id_):
+    """PDF public (brouillon compris), ou complet avec téléphone et email : celui-ci
+    n'est jamais écrit sur disque."""
+    version = _version(id_)
+    lang = _langue_demandee()
+    vue = assembler_vue(g.db, version.slug, lang, apercu=True)
+    config = current_app.config["CV"]
+    photo = lire_photo(g.db, config)
+    complet = request.args.get("complet") == "1"
+    if complet:
+        profil = g.db.get(Profil, 1) or Profil()
+        contenu = rendre_pdf(html_pdf(vue, config, photo,
+                                      (profil.telephone or "", profil.email or "")))
+    else:
+        contenu = pdf_en_cache(config.DOSSIER_CACHE_PDF, html_pdf(vue, config, photo))[0]
+    reponse = make_response(contenu)
+    reponse.mimetype = "application/pdf"
+    nom = f"cv-{version.slug}-{lang}{'-complet' if complet else ''}.pdf"
+    reponse.headers["Content-Disposition"] = f'attachment; filename="{nom}"'
+    return reponse
+
+
 @bp.get("/versions/<int:id_>/apercu")
 def version_apercu(id_):
     """La page publique telle qu'elle sera, brouillon compris. Rien n'est journalisé."""
     version = _version(id_)
-    g.lang = "en" if request.args.get("lang") == "en" else "fr"
-    flask_babel.refresh()  # la langue de Babel suit g.lang
-    vue = assembler_vue(g.db, version.slug, g.lang, apercu=True)
+    _langue_demandee()
+    vue = assembler_vue(g.db, version.slug, g.lang, apercu=True, prefixe_medias="/admin",
+                        config=current_app.config["CV"])
     autre = "fr" if g.lang == "en" else "en"
     return render_template("cv.html", vue=vue, apercu=True, suggestion_en=False,
                            brouillon=version.statut == "brouillon",
                            url_canonique="",
+                           url_pdf=f"/admin/versions/{version.id}/cv.pdf?lang={g.lang}",
                            url_autre_langue=f"/admin/versions/{version.id}/apercu?lang={autre}")

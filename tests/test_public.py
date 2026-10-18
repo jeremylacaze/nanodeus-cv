@@ -6,7 +6,8 @@ import pytest
 from tests.conftest import EMAIL
 
 URLS = ["/", "/devops", "/lead-tech", "/en/", "/en/devops", "/en/lead-tech",
-        "/inconnue", "/en/inconnue", "/devops/contact", "/en/devops/contact"]
+        "/inconnue", "/en/inconnue", "/devops/contact", "/en/devops/contact",
+        "/devops.pdf", "/en/lead-tech.pdf"]
 
 
 @pytest.fixture
@@ -92,7 +93,8 @@ def test_non_listee_noindex(client):
 @pytest.mark.parametrize("url", URLS)
 def test_aucune_fuite_ni_cookie(client, url):
     r = client.get(url)
-    corps = r.get_data(as_text=True) + str(r.headers)
+    # Décodage tolérant : un PDF est binaire (son texte est contrôlé par test_pdf.py).
+    corps = r.get_data().decode("utf-8", "replace") + str(r.headers)
     assert EMAIL not in corps and "99 88 77 66" not in corps
     assert "Set-Cookie" not in r.headers
 
