@@ -4,9 +4,11 @@ from datetime import date, datetime
 import alembic.command
 import alembic.config
 import pytest
-from sqlalchemy import select, text
+from sqlalchemy import inspect, select, text
 from sqlalchemy.exc import IntegrityError
 
+from cv.config import Config
+from cv.db import creer_moteur
 from cv.models import DemandeContact, SelJournalier, Version, VersionElement, Visite
 
 
@@ -92,3 +94,19 @@ def test_migrations_alignees_sur_les_modeles(tmp_path, monkeypatch):
     cfg = alembic.config.Config("alembic.ini")
     alembic.command.upgrade(cfg, "head")
     alembic.command.check(cfg)  # lève si un modèle diverge de la chaîne
+
+
+def test_migration_0003_reversible(tmp_path, monkeypatch):
+    # Un retour arrière en prod rejoue le downgrade : il doit rendre un schéma
+    # 0002 propre, sur lequel la 0003 se rejoue sans erreur.
+    monkeypatch.setenv("CV_DATA_DIR", str(tmp_path))
+    cfg = alembic.config.Config("alembic.ini")
+    alembic.command.upgrade(cfg, "head")
+    alembic.command.downgrade(cfg, "0002")
+    moteur = creer_moteur(Config().DATABASE_URL)
+    tables = set(inspect(moteur).get_table_names())
+    moteur.dispose()
+    assert not tables & {"demande_contact", "visite", "sel_journalier"}
+    assert {"version", "version_element"} <= tables
+    alembic.command.upgrade(cfg, "head")
+    alembic.command.check(cfg)
