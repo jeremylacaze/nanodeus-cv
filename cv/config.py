@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 
 ROLES = ("public", "admin")
+MODES_TLS = ("starttls", "ssl", "aucun")
 
 
 class Config:
@@ -20,6 +21,17 @@ class Config:
         self.URL_PUBLIQUE = os.environ.get("CV_URL_PUBLIQUE", "").rstrip("/")
         if self.URL_PUBLIQUE and not re.fullmatch(r"https?://[^/\s]+", self.URL_PUBLIQUE):
             raise ValueError(f"CV_URL_PUBLIQUE invalide : {self.URL_PUBLIQUE!r}")
+        # Envoi des demandes de contact : SMTP générique (Brevo, ou tout autre relais).
+        self.SMTP_HOTE = os.environ.get("CV_SMTP_HOTE", "")
+        self.SMTP_PORT = int(os.environ.get("CV_SMTP_PORT", "587"))
+        self.SMTP_UTILISATEUR = os.environ.get("CV_SMTP_UTILISATEUR", "")
+        self.SMTP_MOT_DE_PASSE = os.environ.get("CV_SMTP_MOT_DE_PASSE", "")
+        self.SMTP_TLS = os.environ.get("CV_SMTP_TLS", "starttls")
+        if self.SMTP_TLS not in MODES_TLS:
+            raise ValueError(f"CV_SMTP_TLS inconnu : {self.SMTP_TLS!r}")
+        self.EMAIL_EXPEDITEUR = os.environ.get("CV_EMAIL_EXPEDITEUR", "cv@nanodeus.com")
+        # Boîte perso de Jeremy : posée sur le serveur seulement, jamais dans le dépôt.
+        self.EMAIL_DESTINATAIRE = os.environ.get("CV_EMAIL_DESTINATAIRE", "")
 
     @property
     def DATABASE_URL(self) -> str:

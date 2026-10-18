@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: nanodeus-cv VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-18 19:23+0200\n"
+"POT-Creation-Date: 2026-10-18 20:16+0200\n"
 "PO-Revision-Date: 2026-10-18 19:17+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -45,8 +45,15 @@ msgstr "Experience"
 msgid "Formations"
 msgstr "Education"
 
+msgid "Indiquez une adresse email valide."
+msgstr "Please enter a valid email address."
+
 msgid "Langue"
 msgstr "Language"
+
+#, python-format
+msgid "Le message dépasse %(n)s caractères."
+msgstr "The message is longer than %(n)s characters."
 
 #, python-format
 msgid "Objectif : %(mission)s"
@@ -83,6 +90,10 @@ msgstr "Tests · soft skills (%(n)s/%(n)s passed)"
 msgid "Une erreur est survenue"
 msgstr "Something went wrong"
 
+#, python-format
+msgid "Une seule ligne, %(n)s caractères au plus."
+msgstr "A single line, %(n)s characters at most."
+
 msgid "en attente d'un runner…"
 msgstr "waiting for a runner…"
 
@@ -97,4 +108,7 @@ msgstr "open to opportunities"
 
 msgid "voie parallèle : projets perso"
 msgstr "parallel lane: side projects"
+
+msgid "Écrivez un message."
+msgstr "Please write a message."
 

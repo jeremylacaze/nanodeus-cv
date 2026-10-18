@@ -11,6 +11,7 @@ from flask_babel import Babel
 
 from cv.amorcage import amorcer
 from cv.config import Config
+from cv.courriel import EnvoiSMTP
 from cv.db import creer_moteur, fabrique_sessions
 from cv.langue import compiler_catalogues, init_langue, locale_selector
 from cv.securite import init_securite
@@ -30,6 +31,8 @@ def create_app(config: Config | None = None) -> Flask:
     sessions = fabrique_sessions(moteur)
     app.extensions["cv_moteur"] = moteur
     app.extensions["cv_sessions"] = sessions
+    # Lu à chaque envoi : les tests le remplacent par un faux transport.
+    app.extensions["cv_envoi"] = EnvoiSMTP(config)
 
     compiler_catalogues(RACINE / "translations")
     Babel(app, locale_selector=locale_selector)
