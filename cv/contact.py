@@ -21,6 +21,9 @@ LIMITES = ((timedelta(hours=1), 3, True), (timedelta(days=1), 10, True),
            (timedelta(days=1), 50, False))
 _INTERDIT = r"@\s<>()\[\],;:\"\\\x00-\x1f\x7f"
 _EMAIL = re.compile(f"[^{_INTERDIT}]+@[^{_INTERDIT}]+\\.[^{_INTERDIT}]+")
+# Une demande « en_attente » plus vieille que ce délai a perdu son envoi (processus
+# arrêté en route) : l'admin peut la renvoyer. Plus jeune, elle part peut-être encore.
+DELAI_EN_ATTENTE = timedelta(minutes=2)
 # Contrôles C0 et C1, plus les séparateurs de ligne Unicode : str.splitlines() coupe
 # sur chacun, et email.policy refuserait alors l'en-tête au moment de l'envoi.
 CONTROLE = re.compile(r"[\x00-\x1f\x7f-\x9f\u2028\u2029]")
@@ -98,6 +101,22 @@ def construire_message(demande: DemandeContact, config) -> EmailMessage:
         f"Date : {demande.cree_le:%d/%m/%Y %H:%M} UTC\n\n"
         "« Répondre » écrit directement à cette personne.\n")
     return m
+
+
+def message_de_test(config, maintenant: datetime) -> EmailMessage:
+    """Email de vérification du relais SMTP, envoyé depuis l'admin."""
+    m = EmailMessage()
+    m["From"] = config.EMAIL_EXPEDITEUR
+    m["To"] = config.EMAIL_DESTINATAIRE
+    m["Subject"] = "[CV] Email de test"
+    m.set_content(f"Email de test envoyé depuis l'admin du CV le {maintenant:%d/%m/%Y %H:%M} UTC.\n")
+    return m
+
+
+def renvoyable(demande: DemandeContact, maintenant: datetime) -> bool:
+    if demande.statut == "echec":
+        return True
+    return demande.statut == "en_attente" and demande.cree_le < maintenant - DELAI_EN_ATTENTE
 
 
 def envoyer_demande(session, demande: DemandeContact, config, envoi) -> bool:

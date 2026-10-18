@@ -8,7 +8,7 @@ from sqlalchemy import select
 from cv import courriel
 from cv.config import Config
 from cv.contact import (construire_message, enregistrer, envoyer_demande, limite_atteinte,
-                        valider)
+                        message_de_test, renvoyable, valider)
 from cv.courriel import EnvoiSMTP
 from cv.models import DemandeContact
 from tests.fabriques import FauxEnvoi
@@ -213,3 +213,17 @@ def test_smtp_tls_invalide_refuse(monkeypatch):
     monkeypatch.setenv("CV_SMTP_TLS", "oui")
     with pytest.raises(ValueError):
         Config()
+
+
+@pytest.mark.parametrize("statut, age, attendu", [
+    ("echec", timedelta(0), True), ("envoyee", timedelta(days=1), False),
+    ("en_attente", timedelta(minutes=1), False), ("en_attente", timedelta(minutes=3), True)])
+def test_renvoyable(statut, age, attendu):
+    assert renvoyable(_demande(statut=statut, cree_le=T - age), T) is attendu
+
+
+def test_message_de_test(config):
+    m = message_de_test(config, T)
+    assert (m["To"], m["From"], m["Subject"]) == ("dest@test.invalid", "cv@nanodeus.com",
+                                                 "[CV] Email de test")
+    assert m["Reply-To"] is None and "18/10/2026 09:05 UTC" in m.get_content()
