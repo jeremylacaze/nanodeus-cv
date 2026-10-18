@@ -1,0 +1,75 @@
+{# Parcours façon graphe de pipeline. Contrat avec static/pipeline.js :
+   button.job[data-cle][aria-controls=detail-<cle>] ↔ section.detail#detail-<cle>,
+   tous les détails rendus ici (lisibles sans JS et à l'impression). #}
+{% macro bouton(job, droite) -%}
+<button type="button" class="job" data-cle="{{ job.cle }}" aria-expanded="false" aria-controls="detail-{{ job.cle }}">
+  <span class="job__texte">
+    <span class="job__nom"><span class="ok" aria-hidden="true">✓</span> {{ job.intitule }}</span>
+    {% if job.organisation %}<span class="job__org">{{ job.organisation }}</span>{% endif %}
+  </span>
+  <span class="job__duree">{{ droite }}</span>
+</button>
+{%- endmacro %}
+{% macro detail(job) -%}
+{% set org = (job.via ~ " → " ~ job.organisation) if job.via and job.organisation else (job.organisation or job.via) %}
+{% set quand = job.annee if job.type == "formation" else job.periode ~ " · " ~ job.duree %}
+<section class="detail" id="detail-{{ job.cle }}" aria-labelledby="titre-{{ job.cle }}">
+  <h3 class="detail__titre" id="titre-{{ job.cle }}">{{ job.intitule }}</h3>
+  <p class="detail__meta muted">{{ [org, quand] | select | join(" · ") }}</p>
+  {% if job.missions %}
+  <ol class="etapes">
+    {% for mission in job.missions %}<li><span class="ok" aria-hidden="true">✓</span> {{ mission }}</li>{% endfor %}
+  </ol>
+  {% endif %}
+  {% if job.technos %}<p class="technos muted">› {{ job.technos }}</p>{% endif %}
+</section>
+{%- endmacro %}
+{% set jobs = vue.formations + vue.postes + vue.projets %}
+{% set recents = vue.postes or vue.projets or vue.formations %}
+{% if jobs or vue.prochaine_mission %}
+<section class="pipeline" aria-labelledby="titre-parcours" data-initial="{{ recents[-1].cle if recents else 'prochaine' }}">
+  <h2 id="titre-parcours">{{ _("Parcours") }}</h2>
+  <div class="graphe">
+    {% if vue.formations %}
+    <ol class="groupe" aria-label="{{ _('Formations') }}">
+      {% for job in vue.formations %}<li>{{ bouton(job, job.annee) }}</li>{% endfor %}
+    </ol>
+    <span class="lien" aria-hidden="true"></span>
+    {% endif %}
+    {% if vue.postes or vue.projets %}
+    <div class="voies">
+      {% if vue.postes %}
+      <ol class="voie voie--principale" aria-label="{{ _('Expériences') }}">
+        {% for job in vue.postes %}<li>{{ bouton(job, job.duree) }}</li>{% endfor %}
+      </ol>
+      {% endif %}
+      {% if vue.projets %}
+      <div class="voie voie--parallele">
+        <ol aria-label="{{ _('Projets personnels') }}">
+          {% for job in vue.projets %}<li>{{ bouton(job, job.duree) }}</li>{% endfor %}
+        </ol>
+        <span class="note mono">↗ {{ _("voie parallèle : projets perso") }}</span>
+      </div>
+      {% endif %}
+    </div>
+    <span class="lien" aria-hidden="true"></span>
+    {% endif %}
+    <div class="fin">
+      <button type="button" class="job job--en-cours" data-cle="prochaine" aria-expanded="false" aria-controls="detail-prochaine">
+        <span class="job__texte"><span class="job__nom"><span class="run pulse" aria-hidden="true">●</span> {{ _("Prochaine mission") }}</span></span>
+        <span class="job__duree">{{ _("en cours…") }}</span>
+      </button>
+    </div>
+  </div>
+  <div class="details">
+    {% for job in jobs %}{{ detail(job) }}{% endfor %}
+    <section class="detail" id="detail-prochaine" aria-labelledby="titre-prochaine">
+      <h3 class="detail__titre" id="titre-prochaine">{{ _("Prochaine mission") }}</h3>
+      <p class="detail__meta muted">{{ _("en attente d'un runner…") }}</p>
+      {% if vue.prochaine_mission %}
+      <ol class="etapes"><li><span class="run" aria-hidden="true">●</span> {{ _("Objectif : %(mission)s", mission=vue.prochaine_mission) }}</li></ol>
+      {% endif %}
+    </section>
+  </div>
+</section>
+{% endif %}

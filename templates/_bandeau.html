@@ -1,0 +1,25 @@
+{# Bandeau : identité, accroche, chiffres clés. #}
+{% set initiales = (vue.nom.split() | map("first") | join | upper)[:2] %}
+{% set morceaux = [vue.titre, vue.localisation] | select | list %}
+{% if vue.age %}{% set morceaux = morceaux + [ngettext("%(num)s an", "%(num)s ans", vue.age)] %}{% endif %}
+<header class="bandeau">
+  <div class="identite">
+    {% if vue.photo_url %}<img class="photo" src="{{ vue.photo_url }}" alt="" width="64" height="64">
+    {% else %}<div class="photo" aria-hidden="true">{{ initiales }}</div>{% endif %}
+    <div class="identite__texte">
+      <h1><span class="ok" aria-hidden="true">✓</span> {{ vue.nom }}</h1>
+      <p class="sous-titre muted">
+        {{- morceaux | join(" · ") -}}
+        {%- if vue.ouvert %}{% if morceaux %} · {% endif %}<span class="run"><span class="pulse" aria-hidden="true">●</span> {{ _("ouvert aux opportunités") }}</span>{% endif -%}
+      </p>
+      {% if vue.accroche %}<p class="accroche">{{ "« " if lang == "fr" else "“" }}{{ vue.accroche }}{{ " »" if lang == "fr" else "”" }}</p>{% endif %}
+    </div>
+  </div>
+  {% if vue.chiffres %}
+  <ul class="chiffres" aria-label="{{ _('Chiffres clés') }}">
+    {% for valeur, libelle in vue.chiffres %}
+    <li class="kpi"><b>{{ valeur }}</b> <span class="muted">{{ libelle }}</span></li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</header>

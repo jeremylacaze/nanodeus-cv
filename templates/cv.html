@@ -1,13 +1,25 @@
 {% extends "base.html" %}
-{% block meta %}{% if vue.noindex %}<meta name="robots" content="noindex">{% endif %}{% endblock %}
-{% block titre %}{{ vue.nom }} · {{ vue.titre }}{% endblock %}
+{% block meta %}
+  {% if vue.noindex %}<meta name="robots" content="noindex">{% endif %}
+  {% if vue.accroche %}<meta name="description" content="{{ vue.accroche }}">{% endif %}
+  {# Aperçu LinkedIn : jamais de coordonnées ici. #}
+  <meta property="og:type" content="profile">
+  <meta property="og:title" content="{{ vue.nom }}{% if vue.titre %} — {{ vue.titre }}{% endif %}">
+  {% if vue.accroche %}<meta property="og:description" content="{{ vue.accroche }}">{% endif %}
+  <meta property="og:url" content="{{ request.base_url }}">
+  <meta property="og:locale" content="{{ 'en_US' if lang == 'en' else 'fr_FR' }}">
+{% endblock %}
+{% block titre %}{{ vue.nom }}{% if vue.titre %} · {{ vue.titre }}{% endif %}{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='pipeline.js') }}" nonce="{{ csp_nonce }}" defer></script>{% endblock %}
 {% block contenu %}
   {% if suggestion_en %}
   {# Volontairement en anglais sur la page française : c'est la proposition de bascule. #}
   <p class="suggestion-langue" lang="en"><a href="{{ url_autre_langue }}" hreflang="en">View in English</a></p>
   {% endif %}
   <main>
-    <h1>{{ vue.nom }}</h1>
-    <p>{{ vue.titre }}</p>
+    {% include "_bandeau.html" %}
+    {% include "_pipeline.html" %}
+    {% include "_tests.html" %}
+    {% include "_pied.html" %}
   </main>
 {% endblock %}

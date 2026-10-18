@@ -164,3 +164,18 @@ def test_profil_et_interets(session):
     assert (vue.accroche, vue.prochaine_mission) == ("Porteur d'idées.", "Lead tech")
     assert vue.linkedin_url == "https://linkedin.example/x"
     assert vue.photo_url is None
+
+
+def test_annee_affichee_pour_les_formations(session):
+    f.profil(session)
+    licence = f.entree(session, type="formation", debut=date(2019, 9, 1), fin=date(2020, 6, 1))
+    sans_fin = f.entree(session, type="formation", debut=date(2023, 9, 1))
+    f.version(session, elements=[licence, sans_fin])
+    assert [j.annee for j in assembler_vue(session, "devops", "fr").formations] == ["2020", "2023"]
+
+
+def test_liens_non_https_ignores(session):
+    f.profil(session, linkedin_url="javascript:alert(1)", github_url="https://github.com/x")
+    f.version(session)
+    vue = assembler_vue(session, "devops", "fr")
+    assert (vue.linkedin_url, vue.github_url) == ("", "https://github.com/x")

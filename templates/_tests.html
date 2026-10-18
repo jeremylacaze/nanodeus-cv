@@ -1,0 +1,30 @@
+{# Soft skills présentées comme des tests passés, chacune avec sa preuve ; Stack à côté. #}
+{% if vue.soft_skills or vue.competences or vue.interets %}
+<div class="panneaux">
+  {% if vue.soft_skills %}
+  <section class="tests panneau" aria-labelledby="titre-tests">
+    <h2 id="titre-tests">{{ _("Tests · soft skills (%(n)s/%(n)s passés)", n=vue.soft_skills | length) }}</h2>
+    <ul class="etapes">
+      {% for nom, preuve in vue.soft_skills %}
+      <li><span class="ok" aria-hidden="true">✓</span> <strong>{{ nom }}</strong><span class="muted">{{ " : " if lang == "fr" else ": " }}{{ preuve }}</span></li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+  {% if vue.competences or vue.interets %}
+  <section class="stack panneau" aria-labelledby="titre-stack">
+    <h2 id="titre-stack">{{ _("Stack") }}</h2>
+    <dl class="mono">
+      {% for categorie, noms in vue.competences.items() %}
+      {% if categorie %}<dt class="muted">{{ categorie }}</dt>{% endif %}
+      <dd>{{ noms | join(" · ") }}</dd>
+      {% endfor %}
+      {% if vue.interets %}
+      <dt class="muted">{{ _("Centres d'intérêt") }}</dt>
+      <dd>{{ vue.interets | join(" · ") }}</dd>
+      {% endif %}
+    </dl>
+  </section>
+  {% endif %}
+</div>
+{% endif %}

@@ -21,6 +21,12 @@ def champ(obj, nom: str, lang: str) -> str:
     return ""
 
 
+def _url_sure(url: str | None) -> str:
+    """Un lien du profil finit dans un href : https uniquement (pas de javascript:)."""
+    url = (url or "").strip()
+    return url if url.lower().startswith("https://") else ""
+
+
 def _lignes(texte: str) -> list[str]:
     return [ligne.strip() for ligne in (texte or "").splitlines() if ligne.strip()]
 
@@ -38,6 +44,7 @@ class Job:
     missions: list[str]
     technos: str
     en_cours: bool
+    annee: str  # année de fin (ou de début) : ce qu'affiche une formation
 
 
 @dataclass(frozen=True)
@@ -88,6 +95,7 @@ def _job(entree: Entree, coche: VersionElement, lang: str, aujourd_hui: date) ->
         periode=periode(entree.debut, entree.fin, lang),
         duree=duree(entree.debut, entree.fin, lang, aujourd_hui),
         missions=missions, technos=entree.technos or "", en_cours=entree.fin is None,
+        annee=str((entree.fin or entree.debut).year),
     )
 
 
@@ -140,5 +148,5 @@ def assembler_vue(session, slug: str | None, lang: str,
         prochaine_mission=champ(version, "prochaine_mission", lang),
         soft_skills=soft_skills, competences=competences,
         interets=_lignes(champ(profil, "interets", lang)),
-        linkedin_url=profil.linkedin_url or "", github_url=profil.github_url or "",
+        linkedin_url=_url_sure(profil.linkedin_url), github_url=_url_sure(profil.github_url),
     )
