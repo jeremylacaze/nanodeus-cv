@@ -171,6 +171,20 @@ def test_pas_de_route_admin(client, app):
     assert not [r.rule for r in app.url_map.iter_rules() if "admin" in r.rule]
 
 
+def test_aucune_route_admin_dans_le_public(client, tmp_path_factory, monkeypatch):
+    from cv.app import create_app
+    from cv.config import Config
+    monkeypatch.setenv("CV_ROLE", "admin")
+    monkeypatch.setenv("CV_DATA_DIR", str(tmp_path_factory.mktemp("admin")))
+    regles = [r.rule for r in create_app(Config()).url_map.iter_rules()
+              if r.rule.startswith("/admin")]
+    assert len(regles) > 1
+    for regle in regles:
+        url = re.sub(r"<[^>]+>", "1", regle)
+        assert client.get(url).status_code == 404, url
+        assert client.post(url, headers={"Origin": "http://localhost"}).status_code == 404, url
+
+
 def test_role_admin_sans_blueprint_public(fabrique_app):
     app = fabrique_app(role="admin")
     assert "public" not in app.blueprints
@@ -197,3 +211,10 @@ def test_lien_autre_langue_reste_sur_le_site(client, url):
 def test_url_autre_langue(chemin, attendu):
     from cv.langue import url_autre_langue
     assert url_autre_langue(chemin) == attendu
+
+
+def test_erreur_500_en_json(client_qui_plante):
+    r = client_qui_plante.get("/plante", headers={"Accept": "application/json"})
+    assert r.status_code == 500 and r.is_json and r.json["ok"] is False
+    # Le message prévient qu'un renvoi immédiat pourrait faire un doublon.
+    assert "peut-être" in r.json["message"] and EMAIL not in r.get_data(as_text=True)

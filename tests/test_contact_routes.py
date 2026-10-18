@@ -168,3 +168,25 @@ def test_reponses_sans_fuite_ni_cookie(client_et_envoi, appel, echec):
     corps = r.get_data(as_text=True) + str(r.headers)
     assert EMAIL not in corps and "99 88 77 66" not in corps and DESTINATAIRE not in corps
     assert "Set-Cookie" not in r.headers
+
+
+def test_erreurs_en_json_pour_la_modale(client_et_envoi):
+    # La modale lit du JSON : une page HTML d'erreur lui ferait croire à une panne réseau.
+    c, _ = client_et_envoi
+    r = c.post("/devops/contact", data=OK, headers={"Accept": "application/json"})
+    assert r.status_code == 403 and r.is_json and r.json["ok"] is False and r.json["message"]
+    r = c.post("/devops/contact", data={**OK, "message": "x" * 70_000}, headers=JSON)
+    assert r.status_code == 413 and r.is_json and r.json["message"]
+    assert "Accept" in r.headers["Vary"]
+
+
+def test_contact_varie_selon_accept(client_et_envoi):
+    c, _ = client_et_envoi
+    assert "Accept" in c.get("/devops/contact").headers["Vary"]
+    assert "Accept" in c.post("/devops/contact", data=OK, headers=JSON).headers["Vary"]
+
+
+def test_modale_distingue_reseau_et_serveur(client_et_envoi):
+    c, _ = client_et_envoi
+    corps = c.get("/devops").get_data(as_text=True)
+    assert "data-erreur-reseau=" in corps and "data-erreur-serveur=" in corps

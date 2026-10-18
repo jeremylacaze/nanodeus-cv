@@ -11,8 +11,9 @@
 {% endblock %}
 {% block titre %}{{ vue.nom }}{% if vue.titre %} · {{ vue.titre }}{% endif %}{% endblock %}
 {% block scripts %}<script src="{{ url_for('static', filename='pipeline.js') }}" nonce="{{ csp_nonce }}" defer></script>
-<script src="{{ url_for('static', filename='contact.js') }}" nonce="{{ csp_nonce }}" defer></script>{% endblock %}
+{% if not apercu %}<script src="{{ url_for('static', filename='contact.js') }}" nonce="{{ csp_nonce }}" defer></script>{% endif %}{% endblock %}
 {% block contenu %}
+  {% if apercu %}<p class="apercu">Aperçu — version « {{ vue.slug }} »{% if brouillon %}, non visible tant qu'elle est en brouillon{% endif %}. Le contact est désactivé.</p>{% endif %}
   {% if suggestion_en %}
   {# Volontairement en anglais sur la page française : c'est la proposition de bascule. #}
   <p class="suggestion-langue" lang="en"><a href="{{ url_autre_langue }}" hreflang="en">View in English</a></p>
@@ -22,6 +23,7 @@
     {% include "_pipeline.html" %}
     {% include "_tests.html" %}
     {% include "_pied.html" %}
-    {% include "_contact.html" %}
+    {#- L'admin ne sert pas /<slug>/contact : en aperçu, ni modale ni lien. #}
+    {% if not apercu %}{% include "_contact.html" %}{% endif %}
   </main>
 {% endblock %}

@@ -43,8 +43,13 @@
       body: new URLSearchParams(new FormData(formulaire)),
       headers: { Accept: "application/json" }
     }).then(function (r) {
-      // 403 et 413 rendent une page HTML : r.json() échoue, d'où le message générique.
-      return r.json().then(function (donnees) { return { statut: r.status, donnees: donnees }; });
+      // Les erreurs du site répondent en JSON. Une réponse illisible (proxy en panne)
+      // vient du serveur, pas de la connexion : la demande a pu partir, pas de renvoi pressé.
+      return r.json().then(function (donnees) {
+        return { statut: r.status, donnees: donnees };
+      }, function () {
+        return { statut: r.status, donnees: { message: modale.getAttribute("data-erreur-serveur") } };
+      });
     }).then(function (res) {
       poserErreurs(res.donnees.erreurs || {});
       // 202 : l'email n'est pas parti, mais la demande est enregistrée. Pas de renvoi.

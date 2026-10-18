@@ -35,9 +35,16 @@ def _lire_sel(session, jour: date) -> bytes | None:
     return session.scalar(select(SelJournalier.valeur).where(SelJournalier.jour == jour))
 
 
+def purger(session, maintenant: datetime) -> None:
+    """Jette les sels des jours passés et les visites de plus de 6 mois."""
+    session.execute(delete(SelJournalier).where(SelJournalier.jour < maintenant.date()))
+    session.execute(delete(Visite).where(Visite.horodatage < maintenant - CONSERVATION))
+    session.commit()
+
+
 def sel_du_jour(session, maintenant: datetime) -> bytes:
-    """Sel du jour (UTC), créé au premier besoin. Sa création jette les sels
-    précédents et purge les visites de plus de 6 mois : une fois par jour, sans cron."""
+    """Sel du jour (UTC), créé au premier besoin, ce qui déclenche la purge. Sans
+    visite, la purge passe par `flask purger`, lancée chaque nuit par un timer."""
     jour = maintenant.date()
     sel = _lire_sel(session, jour)
     if sel is not None:
@@ -46,9 +53,7 @@ def sel_du_jour(session, maintenant: datetime) -> bytes:
     try:
         session.add(SelJournalier(jour=jour, valeur=sel))
         session.flush()
-        session.execute(delete(SelJournalier).where(SelJournalier.jour < jour))
-        session.execute(delete(Visite).where(Visite.horodatage < maintenant - CONSERVATION))
-        session.commit()
+        purger(session, maintenant)
     except IntegrityError:
         # Un autre processus l'a créé entre-temps : on reprend le sien.
         session.rollback()

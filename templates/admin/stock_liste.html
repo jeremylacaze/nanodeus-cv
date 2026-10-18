@@ -1,0 +1,19 @@
+{% extends "admin/base.html" %}
+{% block titre %}{{ t.titre }}{% endblock %}
+{% block contenu %}
+  <h1>{{ t.titre }}</h1>
+  <div class="actions"><a href="/admin/stock/{{ t.cle }}/nouveau">Ajouter</a></div>
+  {% if elements %}
+  <div class="cadre">
+    <table>
+      <tbody>
+      {% for e in elements %}
+        <tr><td><a href="/admin/stock/{{ t.cle }}/{{ e.id }}">{{ t.libelle(e) }}</a></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="muted">Aucun élément.</p>
+  {% endif %}
+{% endblock %}

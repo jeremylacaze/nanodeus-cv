@@ -3,6 +3,8 @@ import re
 
 from flask import (Blueprint, abort, current_app, g, jsonify, make_response, redirect,
                    render_template, request)
+
+from cv.app import veut_json
 from flask_babel import gettext as _
 
 from cv.contact import Formulaire, enregistrer, envoyer_demande, limite_atteinte, valider
@@ -63,17 +65,12 @@ def _prefixe() -> str:
     return "/en" if g.lang == "en" else ""
 
 
-def _veut_json() -> bool:
-    return request.accept_mimetypes.best_match(["text/html", "application/json"]) \
-        == "application/json"
-
-
 def _reponse_contact(version: Version, statut: int, ok: bool, message: str = "",
                      erreurs: dict | None = None, formulaire: Formulaire | None = None):
     """JSON pour la modale, page HTML sans JavaScript. Sans `formulaire`, la page
     est une confirmation : rien à renvoyer, donc pas de doublon possible."""
     erreurs = erreurs or {}
-    if _veut_json():
+    if veut_json():
         reponse = jsonify(ok=ok, message=message, erreurs=erreurs)
     else:
         reponse = make_response(render_template(
@@ -81,6 +78,7 @@ def _reponse_contact(version: Version, statut: int, ok: bool, message: str = "",
             retour=f"{_prefixe()}/{version.slug}", action=f"{_prefixe()}/{version.slug}/contact",
             valeurs=formulaire, erreurs=erreurs, message=message))
     reponse.status_code = statut
+    reponse.vary.add("Accept")  # JSON ou HTML selon cet en-tête : un cache doit le savoir
     reponse.headers["X-Robots-Tag"] = "noindex"
     return reponse
 

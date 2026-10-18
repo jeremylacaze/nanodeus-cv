@@ -6,7 +6,7 @@ import pytest
 from sqlalchemy import select, text
 
 from cv import journal
-from cv.journal import appareil, classer, empreinte, sel_du_jour, source
+from cv.journal import appareil, classer, empreinte, maintenant_utc, purger, sel_du_jour, source
 from cv.models import SelJournalier, Visite
 
 IP, UA = "203.0.113.77", "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0) Mobile/15E148"
@@ -62,6 +62,32 @@ def test_purge_des_visites_de_plus_de_6_mois(session):
     sel_du_jour(session, T)
     assert [v.horodatage for v in session.scalars(select(Visite))] == [T - timedelta(days=182)]
 
+
+def test_purger_sans_visite(session):
+    # Sans visite le lendemain, le sel de la veille resterait en base : la purge
+    # planifiée le jette quand même, avec les visites de plus de 6 mois.
+    session.add_all([SelJournalier(jour=(T - timedelta(days=1)).date(), valeur=b"h" * 32),
+                     SelJournalier(jour=T.date(), valeur=b"j" * 32),
+                     _visite(T - timedelta(days=184)), _visite(T - timedelta(days=182))])
+    session.commit()
+    purger(session, T)
+    session.expire_all()
+    assert [s.jour for s in session.scalars(select(SelJournalier))] == [T.date()]
+    assert [v.horodatage for v in session.scalars(select(Visite))] == [T - timedelta(days=182)]
+
+
+def test_commande_purger(fabrique_app):
+    app = fabrique_app()
+    hier = maintenant_utc() - timedelta(days=1)
+    with app.extensions["cv_sessions"]() as s:
+        s.add_all([SelJournalier(jour=hier.date(), valeur=b"h" * 32),
+                   _visite(hier - timedelta(days=200))])
+        s.commit()
+    r = app.test_cli_runner().invoke(args=["purger"])
+    assert r.exit_code == 0 and "Purge faite." in r.output
+    with app.extensions["cv_sessions"]() as s:
+        assert s.scalars(select(SelJournalier)).all() == []
+        assert s.scalars(select(Visite)).all() == []
 
 def test_sel_concurrent_relu(session, monkeypatch):
     # Un autre processus a créé le sel du jour entre la lecture et l'écriture.

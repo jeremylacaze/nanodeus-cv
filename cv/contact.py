@@ -21,9 +21,24 @@ LIMITES = ((timedelta(hours=1), 3, True), (timedelta(days=1), 10, True),
            (timedelta(days=1), 50, False))
 _INTERDIT = r"@\s<>()\[\],;:\"\\\x00-\x1f\x7f"
 _EMAIL = re.compile(f"[^{_INTERDIT}]+@[^{_INTERDIT}]+\\.[^{_INTERDIT}]+")
+# Une demande « en_attente » plus vieille que ce délai a perdu son envoi (processus
+# arrêté en route) : l'admin peut la renvoyer. Plus jeune, elle part peut-être encore.
+DELAI_EN_ATTENTE = timedelta(minutes=2)
 # Contrôles C0 et C1, plus les séparateurs de ligne Unicode : str.splitlines() coupe
 # sur chacun, et email.policy refuserait alors l'en-tête au moment de l'envoi.
-_CONTROLE = re.compile(r"[\x00-\x1f\x7f-\x9f\u2028\u2029]")
+CONTROLE = re.compile(r"[\x00-\x1f\x7f-\x9f\u2028\u2029]")
+
+
+def _domaine_ascii(email: str) -> str:
+    """Domaine accentué converti en punycode : écrit tel quel, il ferait un en-tête
+    Reply-To invalide. La partie locale, elle, reste refusée si elle n'est pas ASCII."""
+    local, arobase, domaine = email.rpartition("@")
+    if not arobase or domaine.isascii():
+        return email
+    try:
+        return f"{local}@{domaine.encode('idna').decode('ascii')}"
+    except UnicodeError:
+        return email
 
 
 @dataclass
@@ -42,8 +57,9 @@ def valider(donnees: Mapping[str, str]) -> tuple[Formulaire, dict[str, str]]:
         ("entreprise", "entreprise"), ("piege", "site_web"))})
     # Un saut de ligne vaut un caractère, comme pour le maxlength du navigateur.
     f.message = f.message.replace("\r\n", "\n").replace("\r", "\n")
+    f.email = _domaine_ascii(f.email)
     erreurs = {}
-    if len(f.email) > MAX_EMAIL or not _EMAIL.fullmatch(f.email):
+    if len(f.email) > MAX_EMAIL or not f.email.isascii() or not _EMAIL.fullmatch(f.email):
         erreurs["email"] = _("Indiquez une adresse email valide.")
     if not f.message:
         erreurs["message"] = _("Écrivez un message.")
@@ -51,7 +67,7 @@ def valider(donnees: Mapping[str, str]) -> tuple[Formulaire, dict[str, str]]:
         erreurs["message"] = _("Le message dépasse %(n)s caractères.", n=MAX_MESSAGE)
     for champ in ("nom", "entreprise"):
         valeur = getattr(f, champ)
-        if len(valeur) > MAX_LIGNE or _CONTROLE.search(valeur):
+        if len(valeur) > MAX_LIGNE or CONTROLE.search(valeur):
             erreurs[champ] = _("Une seule ligne, %(n)s caractères au plus.", n=MAX_LIGNE)
     return f, erreurs
 
@@ -98,6 +114,22 @@ def construire_message(demande: DemandeContact, config) -> EmailMessage:
         f"Date : {demande.cree_le:%d/%m/%Y %H:%M} UTC\n\n"
         "« Répondre » écrit directement à cette personne.\n")
     return m
+
+
+def message_de_test(config, maintenant: datetime) -> EmailMessage:
+    """Email de vérification du relais SMTP, envoyé depuis l'admin."""
+    m = EmailMessage()
+    m["From"] = config.EMAIL_EXPEDITEUR
+    m["To"] = config.EMAIL_DESTINATAIRE
+    m["Subject"] = "[CV] Email de test"
+    m.set_content(f"Email de test envoyé depuis l'admin du CV le {maintenant:%d/%m/%Y %H:%M} UTC.\n")
+    return m
+
+
+def renvoyable(demande: DemandeContact, maintenant: datetime) -> bool:
+    if demande.statut == "echec":
+        return True
+    return demande.statut == "en_attente" and demande.cree_le < maintenant - DELAI_EN_ATTENTE
 
 
 def envoyer_demande(session, demande: DemandeContact, config, envoi) -> bool:

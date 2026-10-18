@@ -1,10 +1,21 @@
 """Configuration lue dans l'environnement, au démarrage."""
 import os
 import re
+from ipaddress import ip_network
 from pathlib import Path
 
 ROLES = ("public", "admin")
 MODES_TLS = ("starttls", "ssl", "aucun")
+# Tailscale (IPv4 CGNAT et IPv6 ULA du tailnet), plus le loopback pour ./dev.sh.
+RESEAUX_PAR_DEFAUT = "100.64.0.0/10,fd7a:115c:a1e0::/48,127.0.0.0/8,::1/128"
+HOTES_PAR_DEFAUT = "localhost,127.0.0.1,::1"
+
+
+def lire_reseaux(texte: str) -> tuple:
+    """Réseaux CIDR séparés par des virgules ; lève ValueError sur une valeur invalide
+    (y compris une adresse d'hôte comme 100.64.0.7/10, sans doute une faute de frappe)."""
+    return tuple(ip_network(morceau.strip(), strict=True)
+                 for morceau in texte.split(",") if morceau.strip())
 
 
 class Config:
@@ -17,6 +28,23 @@ class Config:
         # Secret serveur combiné au sel du jour pour les empreintes (cv/journal.py).
         self.SEL_HMAC = os.environ.get("CV_SEL_HMAC", "dev-uniquement")
         self.TRUST_PROXY = os.environ.get("TRUST_PROXY", "0") == "1"
+        if self.ROLE == "admin" and self.TRUST_PROXY:
+            # Sans proxy devant l'admin, un X-Forwarded-For forgé contournerait le
+            # contrôle d'adresse source.
+            raise ValueError("TRUST_PROXY=1 est interdit en rôle admin")
+        # Lus en rôle admin seulement : une faute dans ces variables ne doit jamais
+        # empêcher le site public de démarrer, même avec un .env partagé (spec § 9).
+        self.ADMIN_RESEAUX, self.ADMIN_HOTES = (), ()
+        if self.ROLE == "admin":
+            # Adresses sources admises par l'admin ; une chaîne vide coupe le contrôle.
+            self.ADMIN_RESEAUX = lire_reseaux(os.environ.get("CV_ADMIN_RESEAUX",
+                                                             RESEAUX_PAR_DEFAUT))
+            # Noms d'hôte admis (sans port) : contre le DNS rebinding, une page tierce
+            # dont le domaine pointerait vers l'IP de l'admin.
+            self.ADMIN_HOTES = tuple(h.strip().lower() for h in os.environ.get(
+                "CV_ADMIN_HOTES", HOTES_PAR_DEFAUT).split(",") if h.strip())
+            if not self.ADMIN_HOTES:
+                raise ValueError("CV_ADMIN_HOTES vide : l'admin n'accepterait aucun hôte")
         # Adresse canonique (og:url) : sans elle, l'en-tête Host de la requête ferait foi.
         self.URL_PUBLIQUE = os.environ.get("CV_URL_PUBLIQUE", "").rstrip("/")
         if self.URL_PUBLIQUE and not re.fullmatch(r"https?://[^/\s]+", self.URL_PUBLIQUE):

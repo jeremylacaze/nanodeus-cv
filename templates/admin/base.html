@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>{% block titre %}{% endblock %} · Admin CV</title>
+  <link rel="stylesheet" href="{{ url_for('admin.static', filename='admin.css') }}">
+  <script src="{{ url_for('admin.static', filename='admin.js') }}" nonce="{{ csp_nonce }}" defer></script>
+</head>
+<body>
+  <header class="entete">
+    <a class="marque" href="/admin/">Admin CV</a>
+    <nav class="nav" aria-label="Sections">
+      <a href="/admin/profil">Profil</a>
+      <a href="/admin/stock/parcours">Parcours</a>
+      <a href="/admin/stock/soft-skills">Soft skills</a>
+      <a href="/admin/stock/competences">Compétences</a>
+      <a href="/admin/stock/chiffres">Chiffres</a>
+      <a href="/admin/versions">Versions</a>
+      <a href="/admin/demandes">Demandes</a>
+      <a href="/admin/visites">Visites</a>
+    </nav>
+  </header>
+  <main class="page">
+    {% if message_ok %}<p class="message" role="status">{{ message_ok }}</p>{% endif %}
+    {% block contenu %}{% endblock %}
+  </main>
+</body>
+</html>

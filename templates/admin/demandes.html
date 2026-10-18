@@ -1,0 +1,42 @@
+{% extends "admin/base.html" %}
+{% block titre %}Demandes{% endblock %}
+{% block contenu %}
+  <h1>Demandes de contact</h1>
+  {% if erreur_test %}<p class="message alerte" role="alert">L'email de test n'est pas parti : {{ erreur_test }}</p>{% endif %}
+  <form method="post" action="/admin/demandes/test">
+    <div class="actions"><button type="submit" class="secondaire">Envoyer un email de test</button></div>
+  </form>
+  {% if demandes %}
+  <div class="cadre">
+    <table>
+      <thead><tr><th>Date (UTC)</th><th>Contact</th><th>Version</th><th>Message</th><th>Statut</th><th>Actions</th></tr></thead>
+      <tbody>
+      {% for d in demandes %}
+        <tr>
+          <td>{{ d.cree_le.strftime("%d/%m/%Y %H:%M") }}</td>
+          <td>{{ d.nom or "—" }}{% if d.entreprise %}<br><span class="muted">{{ d.entreprise }}</span>{% endif %}<br><code>{{ d.email }}</code></td>
+          <td>{{ d.version_slug }} ({{ d.langue }})</td>
+          <td class="texte-long">{{ d.message }}</td>
+          <td><span class="badge {{ {'envoyee': 'badge--ok', 'en_attente': 'badge--run', 'echec': 'badge--erreur'}[d.statut] }}">{{ d.statut }}</span>
+            {% if d.erreur %}<br><span class="erreur-champ">{{ d.erreur }}</span>{% endif %}</td>
+          <td>
+            <div class="actions">
+              {% if d.id in renvoyables %}
+              <form method="post" action="/admin/demandes/{{ d.id }}/renvoyer">
+                <button type="submit">Renvoyer</button>
+              </form>
+              {% endif %}
+              <form method="post" action="/admin/demandes/{{ d.id }}/supprimer" data-confirmer="Supprimer cette demande ?">
+                <button type="submit" class="danger">Supprimer</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="muted">Aucune demande.</p>
+  {% endif %}
+{% endblock %}

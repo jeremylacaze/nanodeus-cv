@@ -49,3 +49,9 @@ def fabrique_app(tmp_path, monkeypatch):
         return app
 
     return fabriquer
+
+
+@pytest.fixture
+def admin(fabrique_app):
+    """Client de l'admin (adresse source par défaut du client de test : 127.0.0.1)."""
+    return fabrique_app(role="admin").test_client()

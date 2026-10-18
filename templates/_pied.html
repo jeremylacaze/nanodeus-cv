@@ -6,7 +6,11 @@
     <div class="secret mono"><span><span aria-hidden="true">🔒</span> PHONE <span class="muted">***</span></span><span class="muted">{{ _("masqué") }}</span></div>
     <div class="secret mono"><span><span aria-hidden="true">🔒</span> EMAIL <span class="muted">***</span></span>
       {#- Un lien : sans JavaScript, il mène à la page de contact ; contact.js ouvre la modale. #}
+      {%- if apercu %}
+      <span class="btn-contact inactif">{{ _("Demander l'accès") }}</span>
+      {%- else %}
       <a class="btn-contact" href="{{ '/en' if lang == 'en' else '' }}/{{ vue.slug }}/contact" data-action="demander-acces">{{ _("Demander l'accès") }}</a>
+      {%- endif %}
     </div>
   </section>
   {% if vue.linkedin_url or vue.github_url %}

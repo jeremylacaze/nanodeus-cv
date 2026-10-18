@@ -1,0 +1,32 @@
+{# Rend une liste de Champ (cv/admin/formulaires.py) avec valeurs et erreurs. #}
+{% macro champs(liste, valeurs, erreurs) %}
+{% for c in liste %}
+  {% set v = valeurs.get(c.nom) %}
+  {% set e = erreurs.get(c.nom) %}
+  {% set id = "champ-" ~ c.nom %}
+  {% if c.type == "case" %}
+  <div class="champ champ--case">
+    <input type="checkbox" id="{{ id }}" name="{{ c.nom }}" value="1"{% if v %} checked{% endif %}>
+    <label for="{{ id }}">{{ c.libelle }}</label>
+    {% if c.aide %}<span class="aide">{{ c.aide }}</span>{% endif %}
+  </div>
+  {% else %}
+  <div class="champ">
+    <label for="{{ id }}">{{ c.libelle }}{% if c.requis %} *{% endif %}</label>
+    {% if c.type == "texte" %}
+    <textarea id="{{ id }}" name="{{ c.nom }}" maxlength="{{ c.max }}"{% if e %} aria-invalid="true"{% endif %}>{{ v if v is not none else "" }}</textarea>
+    {% elif c.type == "choix" %}
+    <select id="{{ id }}" name="{{ c.nom }}"{% if e %} aria-invalid="true"{% endif %}>
+      {% for option in c.choix %}<option value="{{ option }}"{% if option == v %} selected{% endif %}>{{ option }}</option>{% endfor %}
+    </select>
+    {% else %}
+    <input id="{{ id }}" name="{{ c.nom }}"
+           type="{{ 'date' if c.type == 'date' else 'text' }}"{% if c.type != "date" %} maxlength="{{ c.max }}"{% endif %}
+           value="{{ v if v is not none else '' }}"{% if c.requis %} required{% endif %}{% if e %} aria-invalid="true"{% endif %}>
+    {% endif %}
+    {% if c.aide %}<span class="aide">{{ c.aide }}</span>{% endif %}
+    {% if e %}<span class="erreur-champ">{{ e }}</span>{% endif %}
+  </div>
+  {% endif %}
+{% endfor %}
+{% endmacro %}

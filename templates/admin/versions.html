@@ -1,0 +1,33 @@
+{% extends "admin/base.html" %}
+{% block titre %}Versions{% endblock %}
+{% block contenu %}
+  <h1>Versions</h1>
+  <div class="actions"><a href="/admin/versions/nouvelle">Nouvelle version</a></div>
+  <div class="cadre">
+    <table>
+      <thead><tr><th>Slug</th><th>Statut</th><th>Lien public</th><th>Actions</th></tr></thead>
+      <tbody>
+      {% for v in versions %}
+        <tr>
+          <td><a href="/admin/versions/{{ v.id }}">{{ v.slug }}</a>
+            {% if v.par_defaut %}<span class="badge badge--ok">par défaut</span>{% endif %}</td>
+          <td>{{ v.statut }}</td>
+          <td>{% if v.statut != "brouillon" %}<code>/{{ v.slug }}</code>{% else %}<span class="muted">—</span>{% endif %}</td>
+          <td>
+            <div class="actions">
+              <a href="/admin/versions/{{ v.id }}">Modifier</a>
+              <a href="/admin/versions/{{ v.id }}/apercu">Aperçu FR</a>
+              <a href="/admin/versions/{{ v.id }}/apercu?lang=en">Aperçu EN</a>
+              {% if not v.par_defaut and v.statut != "brouillon" %}
+              <form method="post" action="/admin/versions/{{ v.id }}/par-defaut">
+                <button type="submit" class="secondaire">Par défaut</button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

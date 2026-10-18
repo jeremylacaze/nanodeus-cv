@@ -47,6 +47,12 @@ h1, h2, h3, p, dl, dd { margin: 0; }
   padding: 8px 12px; margin-bottom: 14px;
 }
 
+/* Aperçu depuis l'admin : jamais rendu sur le site public */
+.apercu {
+  background: var(--carte); border: 1px dashed var(--sel); border-radius: 6px;
+  padding: 8px 12px; margin-bottom: 14px; font-weight: 600;
+}
+
 /* Titres de section façon GitHub */
 .pipeline h2, .panneau h2 {
   font-size: 12px; font-weight: 600; color: var(--muted);
@@ -154,7 +160,8 @@ a.secret:hover, a.secret:focus-visible { border-color: var(--sel); }
   border: 0; border-radius: 6px; padding: 5px 12px; cursor: pointer;
 }
 .btn-contact:focus-visible { outline: 2px solid var(--sel); outline-offset: 2px; }
-a.btn-contact { display: inline-block; text-decoration: none; }
+a.btn-contact, span.btn-contact { display: inline-block; text-decoration: none; }
+.btn-contact.inactif { opacity: .6; cursor: not-allowed; }
 .btn-contact:disabled { opacity: .6; cursor: progress; }
 .btn-secondaire {
   font: 12px var(--sans); border: 1px solid var(--bord); border-radius: 6px;
@@ -229,7 +236,7 @@ a.btn-contact { display: inline-block; text-decoration: none; }
     --texte: #000; --muted: #444; --ok: #1a7f37; --run: #7a5200; --sel: #000;
     color-scheme: light;
   }
-  .langues, .suggestion-langue, .btn-contact, .modale-contact { display: none !important; }
+  .langues, .suggestion-langue, .apercu, .btn-contact, .modale-contact { display: none !important; }
   .details[hidden], .detail[hidden] { display: block !important; }
   .pulse { animation: none; }
   .graphe { overflow: visible; flex-wrap: wrap; -webkit-mask-image: none; mask-image: none; }

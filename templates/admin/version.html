@@ -1,0 +1,80 @@
+{% extends "admin/base.html" %}
+{% from "admin/_champs.html" import champs %}
+{% block titre %}{{ version.slug if version else "Nouvelle version" }}{% endblock %}
+{% block contenu %}
+  <p><a href="/admin/versions">← Versions</a></p>
+  <h1>{% if version %}Version « {{ version.slug }} »{% else %}Nouvelle version{% endif %}</h1>
+  {% if version %}
+  <div class="actions">
+    <a href="/admin/versions/{{ version.id }}/apercu">Aperçu FR</a>
+    <a href="/admin/versions/{{ version.id }}/apercu?lang=en">Aperçu EN</a>
+    {% if version.par_defaut %}<span class="badge badge--ok">par défaut</span>{% endif %}
+  </div>
+  {% endif %}
+  {% if erreurs %}<p class="message alerte" role="alert">Le formulaire contient des erreurs : rien n'a été enregistré.</p>{% endif %}
+  <form method="post" action="/admin/versions/{{ version.id if version else 'nouvelle' }}">
+    {{ champs(champs_version, valeurs, erreurs) }}
+    <div class="actions"><button type="submit">Enregistrer</button></div>
+  </form>
+  {% if version %}
+  <section id="composition">
+    <h2>Composition</h2>
+    <p class="muted">Cochez ce que montre cette version. L'ordre trie les soft skills,
+      compétences et chiffres (le parcours suit les dates). Une surcharge vide reprend
+      les missions du stock.</p>
+    {% if erreurs_composition %}<p class="message alerte" role="alert">La composition contient des erreurs : rien n'a été enregistré.</p>{% endif %}
+    <form method="post" action="/admin/versions/{{ version.id }}/composition">
+      {% for type_element, liste in lignes.items() %}
+      <fieldset>
+        <legend>{{ titres[type_element] }}</legend>
+        {% if liste %}
+        <div class="cadre">
+          <table>
+            <thead><tr><th>Cochée</th><th>Élément</th><th>Ordre</th>
+              {% if type_element == "entree" %}<th>Missions (FR)</th><th>Missions (EN)</th>{% endif %}</tr></thead>
+            <tbody>
+            {% for l in liste %}
+              {% set cle = type_element ~ "-" ~ l.element_id %}
+              {% if composition is not none %}
+                {% set coche = ("coche-" ~ cle) in composition %}
+                {% set ordre = composition.get("ordre-" ~ cle, "") %}
+                {% set m_fr = composition.get("missions_fr-" ~ l.element_id, "") %}
+                {% set m_en = composition.get("missions_en-" ~ l.element_id, "") %}
+              {% else %}
+                {% set coche, ordre, m_fr, m_en = l.coche, l.ordre, l.missions_fr, l.missions_en %}
+              {% endif %}
+              {% set e_ordre = erreurs_composition.get("ordre-" ~ cle) %}
+              <tr>
+                <td><input type="checkbox" id="coche-{{ cle }}" name="coche-{{ cle }}" value="1"{% if coche %} checked{% endif %}></td>
+                <td><label for="coche-{{ cle }}">{{ l.libelle }}</label></td>
+                <td><input type="number" name="ordre-{{ cle }}" min="0" max="999" value="{{ ordre }}" aria-label="Ordre"{% if e_ordre %} aria-invalid="true"{% endif %}>
+                  {% if e_ordre %}<span class="erreur-champ">{{ e_ordre }}</span>{% endif %}</td>
+                {% if type_element == "entree" %}
+                {% for langue, valeur in (("fr", m_fr), ("en", m_en)) %}
+                {% set e_m = erreurs_composition.get("missions_" ~ langue ~ "-" ~ l.element_id) %}
+                <td><textarea name="missions_{{ langue }}-{{ l.element_id }}" maxlength="4000" aria-label="Missions ({{ langue | upper }})"
+                              placeholder="Missions du stock"{% if e_m %} aria-invalid="true"{% endif %}>{{ valeur }}</textarea>
+                  {% if e_m %}<span class="erreur-champ">{{ e_m }}</span>{% endif %}</td>
+                {% endfor %}
+                {% endif %}
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="muted">Le stock est vide.</p>
+        {% endif %}
+      </fieldset>
+      {% endfor %}
+      <div class="actions"><button type="submit">Enregistrer la composition</button></div>
+    </form>
+  </section>
+  {% endif %}
+  {% if version and not version.par_defaut %}
+  <form method="post" action="/admin/versions/{{ version.id }}/supprimer"
+        data-confirmer="Supprimer la version « {{ version.slug }} » ?">
+    <div class="actions"><button type="submit" class="danger">Supprimer la version</button></div>
+  </form>
+  {% endif %}
+{% endblock %}
