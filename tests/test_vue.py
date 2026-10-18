@@ -205,3 +205,10 @@ def test_liens_non_https_ignores(session):
     f.version(session)
     vue = assembler_vue(session, "devops", "fr")
     assert (vue.linkedin_url, vue.github_url) == ("", "https://github.com/x")
+
+
+def test_apercu_rend_un_brouillon(session):
+    f.profil(session)
+    f.version(session, "b", statut="brouillon")
+    assert assembler_vue(session, "b", "fr") is None
+    assert assembler_vue(session, "b", "fr", apercu=True).slug == "b"

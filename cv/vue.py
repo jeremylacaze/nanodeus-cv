@@ -71,12 +71,14 @@ class VueCV:
     github_url: str
 
 
-def version_publique(session, slug: str | None) -> Version | None:
+def version_publique(session, slug: str | None, apercu: bool = False) -> Version | None:
+    """Version servie sur /<slug> (ou / si None). Un brouillon n'est rendu qu'en aperçu,
+    depuis l'admin."""
     requete = select(Version)
     requete = (requete.where(Version.par_defaut.is_(True)) if slug is None
                else requete.where(Version.slug == slug))
     version = session.scalars(requete).first()
-    if version is None or version.statut == "brouillon":
+    if version is None or (version.statut == "brouillon" and not apercu):
         return None
     return version
 
@@ -111,8 +113,8 @@ def _job(entree: Entree, coche: VersionElement, lang: str, aujourd_hui: date) ->
 
 
 def assembler_vue(session, slug: str | None, lang: str,
-                  aujourd_hui: date | None = None) -> VueCV | None:
-    version = version_publique(session, slug)
+                  aujourd_hui: date | None = None, apercu: bool = False) -> VueCV | None:
+    version = version_publique(session, slug, apercu)
     if version is None:
         return None
     aujourd_hui = aujourd_hui or date.today()

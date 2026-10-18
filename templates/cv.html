@@ -13,6 +13,7 @@
 {% block scripts %}<script src="{{ url_for('static', filename='pipeline.js') }}" nonce="{{ csp_nonce }}" defer></script>
 <script src="{{ url_for('static', filename='contact.js') }}" nonce="{{ csp_nonce }}" defer></script>{% endblock %}
 {% block contenu %}
+  {% if apercu %}<p class="apercu">Aperçu — version « {{ vue.slug }} », non visible tant qu'elle est en brouillon.</p>{% endif %}
   {% if suggestion_en %}
   {# Volontairement en anglais sur la page française : c'est la proposition de bascule. #}
   <p class="suggestion-langue" lang="en"><a href="{{ url_autre_langue }}" hreflang="en">View in English</a></p>

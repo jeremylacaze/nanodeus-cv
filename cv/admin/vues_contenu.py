@@ -1,11 +1,15 @@
 """Admin : édition du profil, du stock et des versions."""
+import flask_babel
 from flask import abort, g, redirect, render_template, request
 from sqlalchemy import select
 
 from cv.admin import bp
 from cv.admin.formulaires import MAX_TEXTE, Champ, appliquer, lire, valeurs_de
 from cv.admin.stock import TYPES, supprimer_element
-from cv.models import Profil
+from cv.admin.versions import (CHAMPS_VERSION, definir_par_defaut, supprimer_version,
+                               verifier_version)
+from cv.models import Profil, Version
+from cv.vue import assembler_vue
 
 PRIVE = "Privé : sert seulement au PDF complet, jamais au site public."
 
@@ -105,3 +109,67 @@ def stock_supprimer(cle, id_):
     t = _type_stock(cle)
     supprimer_element(g.db, t, _element(t, id_))
     return ok(f"/admin/stock/{t.cle}", "supprime")
+
+
+def _version(id_: int) -> Version:
+    return g.db.get(Version, id_) or abort(404)
+
+
+@bp.get("/versions")
+def versions():
+    liste = g.db.scalars(select(Version).order_by(Version.par_defaut.desc(), Version.slug)).all()
+    return render_template("admin/versions.html", versions=liste)
+
+
+def _editer_version(version: Version | None):
+    if request.method == "POST":
+        valeurs, erreurs = lire(request.form, CHAMPS_VERSION)
+        if not erreurs:
+            erreurs = verifier_version(g.db, valeurs, version)
+        if not erreurs:
+            if version is None:
+                version = Version()
+                g.db.add(version)
+            appliquer(version, valeurs)
+            g.db.commit()
+            return ok(f"/admin/versions/{version.id}")
+        return render_template("admin/version.html", version=version, champs_version=CHAMPS_VERSION,
+                               valeurs=request.form.to_dict(), erreurs=erreurs), 400
+    valeurs = valeurs_de(version, CHAMPS_VERSION) if version else {"statut": "brouillon"}
+    return render_template("admin/version.html", version=version, champs_version=CHAMPS_VERSION,
+                           valeurs=valeurs, erreurs={})
+
+
+@bp.route("/versions/nouvelle", methods=["GET", "POST"])
+def version_nouvelle():
+    return _editer_version(None)
+
+
+@bp.route("/versions/<int:id_>", methods=["GET", "POST"])
+def version(id_):
+    return _editer_version(_version(id_))
+
+
+@bp.post("/versions/<int:id_>/par-defaut")
+def version_par_defaut(id_):
+    fait = definir_par_defaut(g.db, _version(id_))
+    return ok("/admin/versions", "par-defaut" if fait else "defaut-brouillon")
+
+
+@bp.post("/versions/<int:id_>/supprimer")
+def version_supprimer(id_):
+    fait = supprimer_version(g.db, _version(id_))
+    return ok("/admin/versions", "supprime" if fait else "defaut-protege")
+
+
+@bp.get("/versions/<int:id_>/apercu")
+def version_apercu(id_):
+    """La page publique telle qu'elle sera, brouillon compris. Rien n'est journalisé."""
+    version = _version(id_)
+    g.lang = "en" if request.args.get("lang") == "en" else "fr"
+    flask_babel.refresh()  # la langue de Babel suit g.lang
+    vue = assembler_vue(g.db, version.slug, g.lang, apercu=True)
+    autre = "fr" if g.lang == "en" else "en"
+    return render_template("cv.html", vue=vue, apercu=True, suggestion_en=False,
+                           url_canonique="",
+                           url_autre_langue=f"/admin/versions/{version.id}/apercu?lang={autre}")

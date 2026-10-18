@@ -1,0 +1,25 @@
+{% extends "admin/base.html" %}
+{% from "admin/_champs.html" import champs %}
+{% block titre %}{{ version.slug if version else "Nouvelle version" }}{% endblock %}
+{% block contenu %}
+  <p><a href="/admin/versions">← Versions</a></p>
+  <h1>{% if version %}Version « {{ version.slug }} »{% else %}Nouvelle version{% endif %}</h1>
+  {% if version %}
+  <div class="actions">
+    <a href="/admin/versions/{{ version.id }}/apercu">Aperçu FR</a>
+    <a href="/admin/versions/{{ version.id }}/apercu?lang=en">Aperçu EN</a>
+    {% if version.par_defaut %}<span class="badge badge--ok">par défaut</span>{% endif %}
+  </div>
+  {% endif %}
+  {% if erreurs %}<p class="message alerte" role="alert">Le formulaire contient des erreurs : rien n'a été enregistré.</p>{% endif %}
+  <form method="post" action="/admin/versions/{{ version.id if version else 'nouvelle' }}">
+    {{ champs(champs_version, valeurs, erreurs) }}
+    <div class="actions"><button type="submit">Enregistrer</button></div>
+  </form>
+  {% if version and not version.par_defaut %}
+  <form method="post" action="/admin/versions/{{ version.id }}/supprimer"
+        data-confirmer="Supprimer la version « {{ version.slug }} » ?">
+    <div class="actions"><button type="submit" class="danger">Supprimer la version</button></div>
+  </form>
+  {% endif %}
+{% endblock %}
