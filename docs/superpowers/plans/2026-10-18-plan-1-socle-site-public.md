@@ -13,7 +13,7 @@ coordonnées) pour une version et une langue, un blueprint public Jinja, un JS s
 framework pour l'interactivité du pipeline. L'app est créée par `create_app(role)` ;
 ce plan ne construit que le rôle `public`.
 
-**Tech Stack:** Python 3.12, Flask 3.1, SQLAlchemy 2.1, Alembic, Flask-Babel / Babel,
+**Tech Stack:** Python 3.12 dans l’image (3.14 en local sur le Mac, code compatible des deux ; `ruff` en `target-version = "py312"`), Flask 3.1, SQLAlchemy 2.1, Alembic, Flask-Babel / Babel,
 pytest, ruff.
 
 **Spec:** `docs/superpowers/specs/2026-10-18-cv-pipeline-design.md` (lire § 1, 3, 4,
@@ -112,7 +112,7 @@ précédent terminé (pour partir du code réel) :
 
 - [ ] **Step 1: Créer la branche, le venv et les fichiers de dépendances**
 
-Run: `git switch -c feat/socle-site-public && python3.12 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt`
+Run: `git switch -c feat/socle-site-public && python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt`
 Expected: installation sans erreur (`requirements-dev.txt` inclut `-r requirements.txt`).
 
 - [ ] **Step 2: Écrire les tests qui échouent**
