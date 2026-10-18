@@ -130,3 +130,10 @@ def test_page_anglaise(client):
     html = _html(client, "/en/devops")
     assert "Application administrator" in html and "Parcours" not in html
     assert "Request access" in html
+
+
+def test_libelle_de_la_prochaine_mission_visible_sans_clic(client):
+    # Spec § 4.1 : le libellé dépend de la version, lisible sur le graphe même.
+    html = _html(client, "/lead-tech")
+    bouton = re.search(r'<button[^>]*data-cle="prochaine".*?</button>', html, re.S).group(0)
+    assert "Lead tech" in bouton

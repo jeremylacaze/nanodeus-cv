@@ -84,7 +84,7 @@ h1 { font-size: 22px; line-height: 1.25; }
 .voie--principale { display: flex; align-items: center; }
 .voie--principale li { display: flex; align-items: center; }
 .voie--parallele { display: flex; align-items: center; gap: 8px; }
-.voie--parallele ol { display: flex; gap: 6px; }
+.voie--parallele > ol { display: flex; gap: 6px; }
 .voie--parallele .job { border-style: dashed; }
 .groupe .job { max-width: 160px; }
 .note { color: var(--muted); white-space: nowrap; }
@@ -154,24 +154,25 @@ a.secret:hover, a.secret:focus-visible { border-color: var(--sel); }
 /* Téléphone : frise verticale, le plus récent en haut, détail en accordéon */
 @media (max-width: 720px) {
   .graphe { flex-direction: column-reverse; align-items: stretch; overflow: visible; padding: 0; }
-  .graphe, .voies, .graphe .groupe, .voie--parallele ol { gap: 0; }
+  .graphe, .voies, .graphe .groupe, .voie--parallele > ol { gap: 0; }
   .lien, .voie--principale li + li::before { display: none; }
   .voie--principale { flex-direction: column-reverse; align-items: stretch; }
   .voie--principale li { display: block; }
   .voie--parallele { flex-direction: column; align-items: stretch; gap: 0; }
-  .voie--parallele ol { flex-direction: column; }
+  .voie--parallele > ol { flex-direction: column-reverse; }
   .graphe .groupe { flex-direction: column-reverse; border: 0; border-radius: 0; padding: 0; background: none; }
   /* Seuls les jalons de la frise, pas les missions des détails déplacés dedans. */
-  .groupe > li, .voie--principale > li, .voie--parallele ol > li, .fin {
+  .groupe > li, .voie--principale > li, .voie--parallele > ol > li, .fin {
     position: relative; margin-left: 7px; padding: 0 0 10px 18px; border-left: 2px solid var(--bord);
   }
-  .groupe > li::after, .voie--principale > li::after, .voie--parallele ol > li::after, .fin::after {
+  .groupe > li::after, .voie--principale > li::after, .voie--parallele > ol > li::after, .fin::after {
     content: ""; position: absolute; left: -7px; top: 13px;
     width: 12px; height: 12px; border-radius: 50%; background: var(--ok);
   }
-  .voie--parallele ol > li::after { background: var(--fond); border: 2px solid var(--ok); }
+  .voie--parallele > ol > li::after { background: var(--fond); border: 2px solid var(--ok); }
   .fin::after { background: var(--run); }
-  .note { white-space: normal; padding: 0 0 10px 27px; }
+  /* La note sert d'en-tête à la voie parallèle, au-dessus de ses projets. */
+  .note { order: -1; white-space: normal; padding: 0 0 10px 27px; }
   .job, .groupe .job { width: 100%; min-width: 0; max-width: none; }
   .job__nom, .job__org { display: block; white-space: normal; overflow-wrap: anywhere; -webkit-line-clamp: none; line-clamp: none; }
   .graphe .detail { margin-top: 8px; }

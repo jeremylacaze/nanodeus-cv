@@ -56,7 +56,7 @@
     {% endif %}
     <div class="fin">
       <button type="button" class="job job--en-cours" data-cle="prochaine" aria-expanded="false" aria-controls="detail-prochaine">
-        <span class="job__texte"><span class="job__nom"><span class="run pulse" aria-hidden="true">●</span> {{ _("Prochaine mission") }}</span></span>
+        <span class="job__texte"><span class="job__nom"><span class="run pulse" aria-hidden="true">●</span> {{ _("Prochaine mission") }}</span>{% if vue.prochaine_mission %}<span class="job__org">{{ vue.prochaine_mission }}</span>{% endif %}</span>
         <span class="job__duree">{{ _("en cours…") }}</span>
       </button>
     </div>
