@@ -21,7 +21,9 @@ LIMITES = ((timedelta(hours=1), 3, True), (timedelta(days=1), 10, True),
            (timedelta(days=1), 50, False))
 _INTERDIT = r"@\s<>()\[\],;:\"\\\x00-\x1f\x7f"
 _EMAIL = re.compile(f"[^{_INTERDIT}]+@[^{_INTERDIT}]+\\.[^{_INTERDIT}]+")
-_CONTROLE = re.compile(r"[\x00-\x1f\x7f]")
+# Contrôles C0 et C1, plus les séparateurs de ligne Unicode : str.splitlines() coupe
+# sur chacun, et email.policy refuserait alors l'en-tête au moment de l'envoi.
+_CONTROLE = re.compile(r"[\x00-\x1f\x7f-\x9f\u2028\u2029]")
 
 
 @dataclass
@@ -38,6 +40,8 @@ def valider(donnees: Mapping[str, str]) -> tuple[Formulaire, dict[str, str]]:
     f = Formulaire(**{champ: (donnees.get(cle) or "").strip() for champ, cle in (
         ("email", "email"), ("message", "message"), ("nom", "nom"),
         ("entreprise", "entreprise"), ("piege", "site_web"))})
+    # Un saut de ligne vaut un caractère, comme pour le maxlength du navigateur.
+    f.message = f.message.replace("\r\n", "\n").replace("\r", "\n")
     erreurs = {}
     if len(f.email) > MAX_EMAIL or not _EMAIL.fullmatch(f.email):
         erreurs["email"] = _("Indiquez une adresse email valide.")

@@ -156,3 +156,11 @@ def test_modale_presente_et_fermee(client):
 
 def test_mention_de_confidentialite(client):
     assert "aucun cookie" in _html(client) and "no cookies" in _html(client, "/en/devops")
+
+
+def test_mention_couvre_les_demandes_de_contact(client):
+    # Une empreinte HMAC salée est pseudonyme, pas anonyme ; et les demandes de
+    # contact, gardées jusqu'à suppression, doivent être annoncées.
+    html, en = _html(client), _html(client, "/en/devops")
+    assert "anonyme" not in html and "pseudonyme" in html
+    assert "demande de contact" in html and "contact request" in en

@@ -50,9 +50,18 @@ def test_message_obligatoire_et_borne():
     assert valider({**OK, "message": "x" * 2000})[1] == {}
 
 
+def test_saut_de_ligne_compte_pour_un_caractere():
+    # Le navigateur envoie \r\n mais son maxlength compte 1 caractère par saut de ligne.
+    message = ("x" * 99 + "\r\n") * 19 + "x" * 99 + "\r\n"
+    formulaire, erreurs = valider({**OK, "message": message})
+    assert erreurs == {} and "\r" not in formulaire.message
+
+
 @pytest.mark.parametrize("champ", ["nom", "entreprise"])
 def test_nom_et_entreprise_sur_une_ligne(champ):
     assert champ in valider({**OK, champ: "A\r\nBcc: x@y.fr"})[1]
+    for separateur in ("\u2028", "\u2029", "\x85", "\x0b"):
+        assert champ in valider({**OK, champ: f"A{separateur}B"})[1]
     assert champ in valider({**OK, champ: "x" * 101})[1]
     assert valider({**OK, champ: ""})[1] == {}
 
