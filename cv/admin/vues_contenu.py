@@ -1,8 +1,10 @@
 """Admin : édition du profil, du stock et des versions."""
-from flask import g, redirect, render_template, request
+from flask import abort, g, redirect, render_template, request
+from sqlalchemy import select
 
 from cv.admin import bp
 from cv.admin.formulaires import MAX_TEXTE, Champ, appliquer, lire, valeurs_de
+from cv.admin.stock import TYPES, supprimer_element
 from cv.models import Profil
 
 PRIVE = "Privé : sert seulement au PDF complet, jamais au site public."
@@ -51,3 +53,55 @@ def profil():
                                valeurs=request.form.to_dict(), erreurs=erreurs), 400
     return render_template("admin/profil.html", liste=CHAMPS_PROFIL,
                            valeurs=valeurs_de(actuel, CHAMPS_PROFIL), erreurs={})
+
+
+def _type_stock(cle: str):
+    return TYPES.get(cle) or abort(404)
+
+
+def _element(type_stock, id_: int):
+    return g.db.get(type_stock.modele, id_) or abort(404)
+
+
+@bp.get("/stock/<cle>")
+def stock_liste(cle):
+    t = _type_stock(cle)
+    elements = g.db.scalars(select(t.modele).order_by(*t.tri)).all()
+    return render_template("admin/stock_liste.html", t=t, elements=elements)
+
+
+def _editer(t, obj):
+    """Création (obj None) ou modification d'un élément du stock."""
+    if request.method == "POST":
+        valeurs, erreurs = lire(request.form, t.champs)
+        if not erreurs and t.verifier:
+            erreurs = t.verifier(valeurs)
+        if not erreurs:
+            if obj is None:
+                obj = t.modele()
+                g.db.add(obj)
+            appliquer(obj, valeurs)
+            g.db.commit()
+            return ok(f"/admin/stock/{t.cle}")
+        return render_template("admin/stock_element.html", t=t, obj=obj,
+                               valeurs=request.form.to_dict(), erreurs=erreurs), 400
+    return render_template("admin/stock_element.html", t=t, obj=obj,
+                           valeurs=valeurs_de(obj, t.champs) if obj else {}, erreurs={})
+
+
+@bp.route("/stock/<cle>/nouveau", methods=["GET", "POST"])
+def stock_nouveau(cle):
+    return _editer(_type_stock(cle), None)
+
+
+@bp.route("/stock/<cle>/<int:id_>", methods=["GET", "POST"])
+def stock_element(cle, id_):
+    t = _type_stock(cle)
+    return _editer(t, _element(t, id_))
+
+
+@bp.post("/stock/<cle>/<int:id_>/supprimer")
+def stock_supprimer(cle, id_):
+    t = _type_stock(cle)
+    supprimer_element(g.db, t, _element(t, id_))
+    return ok(f"/admin/stock/{t.cle}", "supprime")
