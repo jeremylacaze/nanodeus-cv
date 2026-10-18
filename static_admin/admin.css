@@ -71,7 +71,8 @@ button.danger { color: var(--erreur); background: var(--carte-2); border-color: 
 button:disabled { opacity: .6; cursor: default; }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
 .actions form { margin: 0; }
-fieldset { border: 1px solid var(--bord); border-radius: 6px; margin: 0 0 16px; padding: 8px 12px; }
+fieldset { border: 1px solid var(--bord); border-radius: 6px; margin: 0 0 16px; padding: 8px 12px;
+  min-width: 0; /* sinon le fieldset s'élargit au tableau au lieu de le laisser défiler */ }
 legend { font-weight: 600; padding: 0 4px; }
 
 /* Tableaux : défilent dans leur cadre, jamais la page */

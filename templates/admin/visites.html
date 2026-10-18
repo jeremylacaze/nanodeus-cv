@@ -1,0 +1,62 @@
+{% extends "admin/base.html" %}
+{% block titre %}Visites{% endblock %}
+{% macro liste(nom, libelle, options, actuel) %}
+  <div class="champ">
+    <label for="filtre-{{ nom }}">{{ libelle }}</label>
+    <select id="filtre-{{ nom }}" name="{{ nom }}">
+      <option value="">Toutes</option>
+      {% for o in options %}<option value="{{ o }}"{% if o == actuel %} selected{% endif %}>{{ o }}</option>{% endfor %}
+    </select>
+  </div>
+{% endmacro %}
+{% block contenu %}
+  <h1>Visites</h1>
+  <form method="get" action="/admin/visites" class="filtres">
+    <div class="champ"><label for="filtre-du">Du</label>
+      <input type="date" id="filtre-du" name="du" value="{{ filtres.du.isoformat() }}"></div>
+    <div class="champ"><label for="filtre-au">Au (inclus)</label>
+      <input type="date" id="filtre-au" name="au" value="{{ filtres.au.isoformat() }}"></div>
+    {{ liste("version", "Version", versions, filtres.version) }}
+    {{ liste("source", "Source", sources, filtres.source) }}
+    {{ liste("type", "Type", types, filtres.type) }}
+    <div class="actions"><button type="submit">Filtrer</button></div>
+  </form>
+
+  <h2>Totaux</h2>
+  <ul class="compteurs">
+    <li><strong>{{ totaux.total }}</strong> visite(s)</li>
+    <li><strong>{{ totaux.apercus_linkedin }}</strong> aperçu(s) LinkedIn</li>
+  </ul>
+  <div class="cadre">
+    <table>
+      <thead><tr><th>Jour (UTC)</th><th>Visiteurs uniques</th></tr></thead>
+      <tbody>
+      {% for jour, n in totaux.uniques_par_jour %}<tr><td>{{ jour.strftime("%d/%m/%Y") }}</td><td>{{ n }}</td></tr>{% else %}<tr><td colspan="2" class="muted">Aucune visite.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="cadre">
+    <table>
+      <thead><tr><th>Source</th><th>Visites</th></tr></thead>
+      <tbody>
+      {% for source, n in totaux.par_source %}<tr><td>{{ source }}</td><td>{{ n }}</td></tr>{% else %}<tr><td colspan="2" class="muted">Aucune visite.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Détail</h2>
+  {% if tronque %}<p class="muted">Seules les 200 dernières visites sont listées.</p>{% endif %}
+  <div class="cadre">
+    <table>
+      <thead><tr><th>Date (UTC)</th><th>Type</th><th>Version</th><th>Langue</th><th>Source</th><th>Appareil</th></tr></thead>
+      <tbody id="detail-visites">
+      {% for v in visites %}
+        <tr><td>{{ v.horodatage.strftime("%d/%m/%Y %H:%M") }}</td><td>{{ v.type }}</td>
+          <td>{{ v.version_slug }}</td><td>{{ v.langue }}</td><td>{{ v.source }}</td><td>{{ v.appareil }}</td></tr>
+      {% else %}
+        <tr><td colspan="6" class="muted">Aucune visite.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

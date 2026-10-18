@@ -1,14 +1,15 @@
 """Admin : accueil, demandes de contact et visites."""
 from datetime import timedelta
 
-from flask import abort, current_app, g, render_template
+from flask import abort, current_app, g, render_template, request
 from sqlalchemy import func, or_, select
 
 from cv.admin import bp
+from cv.admin.suivi import lire_filtres, totaux, valeurs_presentes, visites
 from cv.admin.vues_contenu import ok
 from cv.contact import envoyer_demande, message_de_test, renvoyable
 from cv.journal import maintenant_utc
-from cv.models import DemandeContact, SoftSkill, Visite
+from cv.models import TYPES_VISITE, DemandeContact, SoftSkill, Visite
 
 
 @bp.get("/")
@@ -70,3 +71,16 @@ def demande_test():
     except Exception as exc:  # noqa: BLE001 — l'échec est affiché, c'est le but du test
         return _page_demandes(erreur_test=f"{exc.__class__.__name__}: {exc}"[:300])
     return _page_demandes(resultat_test="Email de test envoyé.")
+
+
+LIMITE_VISITES = 200
+
+
+@bp.get("/visites")
+def page_visites():
+    filtres = lire_filtres(request.args, maintenant_utc().date())
+    liste = visites(g.db, filtres, LIMITE_VISITES)
+    versions, sources = valeurs_presentes(g.db)
+    return render_template("admin/visites.html", filtres=filtres, visites=liste,
+                           totaux=totaux(g.db, filtres), versions=versions, sources=sources,
+                           types=TYPES_VISITE, tronque=len(liste) == LIMITE_VISITES)
