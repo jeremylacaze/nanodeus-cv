@@ -43,7 +43,7 @@ def test_creer_version(admin):
 
 
 @pytest.mark.parametrize("slug", ["", "Acme", "a b", "a_b", "x" * 41, "en", "contact",
-                                  "static", "admin", "devops"])
+                                  "static", "admin", "photo", "devops"])
 def test_slug_refuse(admin, slug):
     r = admin.post("/admin/versions/nouvelle", headers=ORIGINE,
                    data={"slug": slug, "statut": "publiee", "titre_fr": "T"})

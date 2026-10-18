@@ -10,6 +10,7 @@ from flask_babel import gettext as _
 from cv.contact import Formulaire, enregistrer, envoyer_demande, limite_atteinte, valider
 from cv.journal import empreinte, journaliser, maintenant_utc
 from cv.langue import suggerer_anglais
+from cv.medias import servir_photo
 from cv.models import SLUG, Version
 from cv.vue import assembler_vue, champ, version_publique
 
@@ -23,10 +24,11 @@ def _page(slug: str | None):
     vue = assembler_vue(g.db, slug, g.lang)
     if vue is None:
         abort(404)
-    racine = current_app.config["CV"].URL_PUBLIQUE
+    racine = current_app.config["CV"].URL_PUBLIQUE or request.host_url.rstrip("/")
     reponse = make_response(render_template(
         "cv.html", vue=vue, suggestion_en=suggerer_anglais(request),
-        url_canonique=racine + request.path if racine else request.base_url))
+        url_canonique=racine + request.path,
+        url_og_image=racine + vue.photo_url if vue.photo_url else ""))
     # Le bandeau « View in English » dépend de cet en-tête : un cache doit le savoir.
     reponse.vary.add("Accept-Language")
     if vue.noindex:
@@ -39,6 +41,11 @@ def _page(slug: str | None):
 @bp.get("/en/")
 def accueil():
     return _page(None)
+
+
+@bp.get("/photo/<nom>")
+def photo(nom):
+    return servir_photo(g.db, current_app.config["CV"], nom)
 
 
 @bp.get("/en")

@@ -1,6 +1,6 @@
 """Admin : édition du profil, du stock et des versions."""
 import flask_babel
-from flask import abort, g, redirect, render_template, request
+from flask import abort, current_app, g, redirect, render_template, request
 from sqlalchemy import select
 
 from cv.admin import bp
@@ -8,9 +8,13 @@ from cv.admin.formulaires import MAX_TEXTE, Champ, appliquer, lire, valeurs_de
 from cv.admin.stock import PAR_ELEMENT, TYPES, supprimer_element
 from cv.admin.versions import (CHAMPS_VERSION, composer, definir_par_defaut,
                                elements_du_stock, supprimer_version, verifier_version)
+from cv.medias import (PhotoInvalide, effacer_photo, enregistrer_photo, servir_photo,
+                       traiter_photo)
 from cv.models import Profil, Version
 from cv.vue import assembler_vue
 
+ERREUR_PHOTO = ("Ce fichier n'est pas une photo lisible (JPEG, PNG ou WEBP, "
+                "40 mégapixels au plus).")
 PRIVE = "Privé : sert seulement au PDF complet, jamais au site public."
 
 CHAMPS_PROFIL = (
@@ -64,10 +68,50 @@ def profil():
             appliquer(actuel, valeurs)
             g.db.commit()
             return ok("/admin/profil")
-        return render_template("admin/profil.html", liste=CHAMPS_PROFIL,
-                               valeurs=request.form.to_dict(), erreurs=erreurs), 400
-    return render_template("admin/profil.html", liste=CHAMPS_PROFIL,
-                           valeurs=valeurs_de(actuel, CHAMPS_PROFIL), erreurs={})
+        return _page_profil(actuel, request.form.to_dict(), erreurs, statut=400)
+    return _page_profil(actuel, valeurs_de(actuel, CHAMPS_PROFIL), {})
+
+
+def _page_profil(actuel: Profil | None, valeurs: dict, erreurs: dict,
+                 erreur_photo: str = "", statut: int = 200):
+    return render_template("admin/profil.html", liste=CHAMPS_PROFIL, valeurs=valeurs,
+                           erreurs=erreurs, photo=actuel.photo_fichier if actuel else None,
+                           erreur_photo=erreur_photo), statut
+
+
+@bp.post("/profil/photo")
+def profil_photo():
+    actuel = g.db.get(Profil, 1)
+    fichier = request.files.get("photo")
+    try:
+        if actuel is None or fichier is None:
+            raise PhotoInvalide
+        donnees = traiter_photo(fichier.read())
+    except PhotoInvalide:
+        return _page_profil(actuel, valeurs_de(actuel, CHAMPS_PROFIL), {},
+                            ERREUR_PHOTO, 400)
+    config = current_app.config["CV"]
+    nom = enregistrer_photo(config.DOSSIER_PHOTOS, donnees)
+    ancien, actuel.photo_fichier = actuel.photo_fichier, nom
+    g.db.commit()
+    if ancien != nom:
+        effacer_photo(config, ancien)
+    return ok("/admin/profil", "photo-enregistree")
+
+
+@bp.post("/profil/photo/supprimer")
+def profil_photo_supprimer():
+    actuel = g.db.get(Profil, 1)
+    if actuel is not None and actuel.photo_fichier:
+        ancien, actuel.photo_fichier = actuel.photo_fichier, None
+        g.db.commit()
+        effacer_photo(current_app.config["CV"], ancien)
+    return ok("/admin/profil", "photo-supprimee")
+
+
+@bp.get("/photo/<nom>")
+def photo(nom):
+    return servir_photo(g.db, current_app.config["CV"], nom)
 
 
 def _type_stock(cle: str):
@@ -199,7 +243,7 @@ def version_apercu(id_):
     version = _version(id_)
     g.lang = "en" if request.args.get("lang") == "en" else "fr"
     flask_babel.refresh()  # la langue de Babel suit g.lang
-    vue = assembler_vue(g.db, version.slug, g.lang, apercu=True)
+    vue = assembler_vue(g.db, version.slug, g.lang, apercu=True, prefixe_medias="/admin")
     autre = "fr" if g.lang == "en" else "en"
     return render_template("cv.html", vue=vue, apercu=True, suggestion_en=False,
                            brouillon=version.statut == "brouillon",

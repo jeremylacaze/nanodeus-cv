@@ -10,7 +10,7 @@ from cv.admin.stock import PAR_ELEMENT
 from cv.models import SLUG, STATUTS, TYPES_ELEMENT, Version, VersionElement
 
 # Chemins du site public qu'un slug masquerait.
-SLUGS_RESERVES = frozenset({"en", "contact", "static", "admin"})
+SLUGS_RESERVES = frozenset({"en", "contact", "static", "admin", "photo"})
 _SLUG = re.compile(SLUG)
 
 CHAMPS_VERSION = (

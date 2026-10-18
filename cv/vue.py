@@ -112,8 +112,9 @@ def _job(entree: Entree, coche: VersionElement, lang: str, aujourd_hui: date) ->
     )
 
 
-def assembler_vue(session, slug: str | None, lang: str,
-                  aujourd_hui: date | None = None, apercu: bool = False) -> VueCV | None:
+def assembler_vue(session, slug: str | None, lang: str, aujourd_hui: date | None = None,
+                  apercu: bool = False, prefixe_medias: str = "") -> VueCV | None:
+    """`prefixe_medias` : "/admin" pour l'aperçu, qui sert la photo depuis l'admin."""
     version = version_publique(session, slug, apercu)
     if version is None:
         return None
@@ -152,7 +153,8 @@ def assembler_vue(session, slug: str | None, lang: str,
         slug=version.slug, lang=lang, noindex=version.statut == "non_listee",
         nom=profil.nom_complet or "", titre=champ(version, "titre", lang),
         accroche=champ(version, "accroche", lang), localisation=profil.localisation or "",
-        age=age, ouvert=bool(profil.ouvert_opportunites), photo_url=None,
+        age=age, ouvert=bool(profil.ouvert_opportunites), photo_url=(f"{prefixe_medias}/photo/{profil.photo_fichier}"
+                                                  if profil.photo_fichier else None),
         chiffres=[(champ(c, "valeur", lang), champ(c, "libelle", lang))
                   for c, _ in charger(Chiffre, "chiffre")],
         formations=[j for j in jobs if j.type == "formation"],
