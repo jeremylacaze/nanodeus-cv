@@ -43,6 +43,15 @@ def test_reseau_invalide_refuse(monkeypatch, valeur):
         Config()
 
 
+def test_config_admin_invalide_sans_effet_en_public(monkeypatch):
+    # Spec § 9 : une erreur dans l'admin ne casse jamais le site public, même si les
+    # deux services partagent le même .env.
+    monkeypatch.setenv("CV_ROLE", "public")
+    monkeypatch.setenv("CV_ADMIN_RESEAUX", "pas-un-reseau")
+    monkeypatch.setenv("CV_ADMIN_HOTES", " , ")
+    Config()
+
+
 def test_trust_proxy_interdit_en_admin(monkeypatch):
     monkeypatch.setenv("CV_ROLE", "admin")
     monkeypatch.setenv("TRUST_PROXY", "1")
