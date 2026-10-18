@@ -18,7 +18,8 @@ from cv.models import Profil
 
 TAILLE_PHOTO = 512
 PIXELS_MAX = 40_000_000
-FORMATS_PHOTO = ("JPEG", "PNG", "WEBP")
+# MPO : JPEG HDR des téléphones récents (image principale + gain map) ; la première suffit.
+FORMATS_PHOTO = ("JPEG", "MPO", "PNG", "WEBP")
 # Nom tiré du contenu : une nouvelle photo change d'URL, le cache peut être éternel.
 NOM_PHOTO = re.compile(r"[0-9a-f]{16}\.jpg")
 

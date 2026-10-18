@@ -53,6 +53,18 @@ def test_photo_carree_jpeg_sans_metadonnees():
     assert b"Exif" not in sortie and b"Appareil" not in sortie
 
 
+def test_jpeg_mpo_de_telephone_accepte():
+    # Les JPEG HDR des téléphones récents portent une seconde image (MPF) : Pillow les
+    # ouvre en « MPO ». Seule la première image est gardée.
+    principale = Image.open(BytesIO(_image()))
+    tampon = BytesIO()
+    principale.save(tampon, "MPO", save_all=True, append_images=[Image.new("RGB", (40, 20))])
+    assert Image.open(BytesIO(tampon.getvalue())).format == "MPO"
+    img = Image.open(BytesIO(traiter_photo(tampon.getvalue())))
+    assert img.format == "JPEG" and img.size == (512, 512) and not getattr(img, "is_animated", False)
+    assert _rouge(img.getpixel((40, 256))) and _bleu(img.getpixel((470, 256)))
+
+
 def test_orientation_appliquee():
     exif = Image.Exif()
     exif[0x0112] = 6  # à tourner de 90° dans le sens horaire pour l'afficher
