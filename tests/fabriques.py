@@ -65,3 +65,15 @@ def cocher(session, v, obj, ordre=0, **surcharge):
     session.add(ve)
     session.flush()
     return ve
+
+
+class FauxEnvoi:
+    """Transport d'email de test : garde les messages, ou lève `erreur` si posée."""
+
+    def __init__(self, erreur: Exception | None = None):
+        self.messages, self.erreur = [], erreur
+
+    def envoyer(self, message):
+        if self.erreur is not None:
+            raise self.erreur
+        self.messages.append(message)

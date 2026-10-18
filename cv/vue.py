@@ -71,7 +71,7 @@ class VueCV:
     github_url: str
 
 
-def _version(session, slug: str | None) -> Version | None:
+def version_publique(session, slug: str | None) -> Version | None:
     requete = select(Version)
     requete = (requete.where(Version.par_defaut.is_(True)) if slug is None
                else requete.where(Version.slug == slug))
@@ -112,7 +112,7 @@ def _job(entree: Entree, coche: VersionElement, lang: str, aujourd_hui: date) ->
 
 def assembler_vue(session, slug: str | None, lang: str,
                   aujourd_hui: date | None = None) -> VueCV | None:
-    version = _version(session, slug)
+    version = version_publique(session, slug)
     if version is None:
         return None
     aujourd_hui = aujourd_hui or date.today()

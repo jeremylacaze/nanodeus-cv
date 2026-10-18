@@ -10,7 +10,8 @@
   <meta property="og:locale" content="{{ 'en_US' if lang == 'en' else 'fr_FR' }}">
 {% endblock %}
 {% block titre %}{{ vue.nom }}{% if vue.titre %} · {{ vue.titre }}{% endif %}{% endblock %}
-{% block scripts %}<script src="{{ url_for('static', filename='pipeline.js') }}" nonce="{{ csp_nonce }}" defer></script>{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='pipeline.js') }}" nonce="{{ csp_nonce }}" defer></script>
+<script src="{{ url_for('static', filename='contact.js') }}" nonce="{{ csp_nonce }}" defer></script>{% endblock %}
 {% block contenu %}
   {% if suggestion_en %}
   {# Volontairement en anglais sur la page française : c'est la proposition de bascule. #}
@@ -21,5 +22,6 @@
     {% include "_pipeline.html" %}
     {% include "_tests.html" %}
     {% include "_pied.html" %}
+    {% include "_contact.html" %}
   </main>
 {% endblock %}

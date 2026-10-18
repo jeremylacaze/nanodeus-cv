@@ -1,0 +1,14 @@
+{# Modale « Demander l'accès », ouverte par contact.js. Fermée par défaut : sans
+   JavaScript, le lien du bas de page mène à la page de contact à la place. #}
+<dialog class="modale-contact" aria-labelledby="titre-modale-contact"
+        data-erreur-reseau="{{ _("L'envoi n'a pas pu se faire. Vérifiez votre connexion, puis réessayez.") }}">
+  <div class="modale-contact__entete">
+    <h2 id="titre-modale-contact">{{ _("Demander l'accès") }}</h2>
+    <button type="button" class="btn-secondaire" data-action="fermer-contact">{{ _("Fermer") }}</button>
+  </div>
+  <p class="confirmation retour" role="status" aria-live="polite" hidden></p>
+  {% with action=("/en" if lang == "en" else "") ~ "/" ~ vue.slug ~ "/contact",
+          valeurs={}, erreurs={}, message="" %}
+    {% include "_formulaire_contact.html" %}
+  {% endwith %}
+</dialog>

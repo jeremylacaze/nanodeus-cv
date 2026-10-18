@@ -1,7 +1,8 @@
 """En-têtes de sécurité du site : CSP à nonce bloquante, aucun cookie."""
 import secrets
+from urllib.parse import urlsplit
 
-from flask import g
+from flask import abort, g, request
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 
@@ -10,6 +11,16 @@ def _csp(nonce: str) -> str:
             f"script-src 'self' 'nonce-{nonce}'; "
             "style-src 'self'; img-src 'self' data:; object-src 'none'; "
             "base-uri 'none'; frame-ancestors 'none'; form-action 'self'")
+
+
+_METHODES_A_EFFET = ("POST", "PUT", "PATCH", "DELETE")
+
+
+def origine_valide(req) -> bool:
+    """`Origin` présent et du même site. Tous les navigateurs actuels l'envoient sur
+    un POST : son absence trahit un script, sa différence une page tierce (CSRF)."""
+    origine = req.headers.get("Origin", "")
+    return origine not in ("", "null") and urlsplit(origine).netloc == req.host
 
 
 def init_securite(app):
@@ -21,6 +32,11 @@ def init_securite(app):
     @app.before_request
     def _poser_nonce():
         g.csp_nonce = secrets.token_urlsafe(16)
+
+    @app.before_request
+    def _controler_origine():
+        if request.method in _METHODES_A_EFFET and not origine_valide(request):
+            abort(403)
 
     @app.context_processor
     def _contexte_nonce():
