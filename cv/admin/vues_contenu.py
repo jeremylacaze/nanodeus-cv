@@ -2,6 +2,7 @@
 import flask_babel
 from flask import abort, current_app, g, make_response, redirect, render_template, request
 from sqlalchemy import select
+from werkzeug.exceptions import RequestEntityTooLarge
 
 from cv.admin import bp
 from cv.admin.formulaires import MAX_TEXTE, Champ, appliquer, lire, valeurs_de
@@ -11,11 +12,13 @@ from cv.admin.versions import (CHAMPS_VERSION, composer, definir_par_defaut,
 from cv.medias import (FORMATS_QR, PhotoInvalide, effacer_photo, enregistrer_photo,
                        lire_photo, qr, servir_photo, traiter_photo, url_version)
 from cv.models import Profil, Version
-from cv.pdf import html_pdf, pdf_en_cache, rendre_pdf
+from cv.pdf import html_pdf, pdf_en_cache, rendre_pdf, vider_cache
 from cv.vue import assembler_vue
 
 ERREUR_PHOTO = ("Ce fichier n'est pas une photo lisible (JPEG, PNG ou WEBP, "
                 "40 mégapixels au plus).")
+ERREUR_PHOTO_LOURDE = "Cette photo dépasse 16 Mio : envoyez une version plus légère."
+ERREUR_SANS_PROFIL = "Enregistrez d'abord le profil, puis ajoutez la photo."
 PRIVE = "Privé : sert seulement au PDF complet, jamais au site public."
 
 CHAMPS_PROFIL = (
@@ -83,20 +86,29 @@ def _page_profil(actuel: Profil | None, valeurs: dict, erreurs: dict,
 @bp.post("/profil/photo")
 def profil_photo():
     actuel = g.db.get(Profil, 1)
-    fichier = request.files.get("photo")
+
+    def refus(message, statut):
+        return _page_profil(actuel, valeurs_de(actuel, CHAMPS_PROFIL), {}, message, statut)
+
+    if actuel is None:
+        return refus(ERREUR_SANS_PROFIL, 400)
     try:
-        if actuel is None or fichier is None:
+        fichier = request.files.get("photo")
+    except RequestEntityTooLarge:
+        return refus(ERREUR_PHOTO_LOURDE, 413)
+    try:
+        if fichier is None:
             raise PhotoInvalide
         donnees = traiter_photo(fichier.read())
     except PhotoInvalide:
-        return _page_profil(actuel, valeurs_de(actuel, CHAMPS_PROFIL), {},
-                            ERREUR_PHOTO, 400)
+        return refus(ERREUR_PHOTO, 400)
     config = current_app.config["CV"]
     nom = enregistrer_photo(config.DOSSIER_PHOTOS, donnees)
     ancien, actuel.photo_fichier = actuel.photo_fichier, nom
     g.db.commit()
     if ancien != nom:
         effacer_photo(config, ancien)
+        vider_cache(config.DOSSIER_CACHE_PDF)
     return ok("/admin/profil", "photo-enregistree")
 
 
@@ -107,6 +119,7 @@ def profil_photo_supprimer():
         ancien, actuel.photo_fichier = actuel.photo_fichier, None
         g.db.commit()
         effacer_photo(current_app.config["CV"], ancien)
+        vider_cache(current_app.config["CV"].DOSSIER_CACHE_PDF)
     return ok("/admin/profil", "photo-supprimee")
 
 
@@ -291,7 +304,8 @@ def version_apercu(id_):
     """La page publique telle qu'elle sera, brouillon compris. Rien n'est journalisé."""
     version = _version(id_)
     _langue_demandee()
-    vue = assembler_vue(g.db, version.slug, g.lang, apercu=True, prefixe_medias="/admin")
+    vue = assembler_vue(g.db, version.slug, g.lang, apercu=True, prefixe_medias="/admin",
+                        config=current_app.config["CV"])
     autre = "fr" if g.lang == "en" else "en"
     return render_template("cv.html", vue=vue, apercu=True, suggestion_en=False,
                            brouillon=version.statut == "brouillon",

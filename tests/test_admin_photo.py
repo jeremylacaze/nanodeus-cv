@@ -3,9 +3,11 @@ from io import BytesIO
 
 import pytest
 
+from cv.app import create_app
+from cv.config import Config
 from cv.medias import enregistrer_photo, traiter_photo
 from cv.models import Profil, Version
-from tests.test_medias import _image
+from tests.test_medias import _bombe, _image, _tronque
 
 ORIGINE = {"Origin": "http://localhost"}
 
@@ -57,7 +59,8 @@ def test_suppression_photo(admin):
     assert _photos(admin.application) == []
 
 
-@pytest.mark.parametrize("donnees", [None, b"pas une image"], ids=["sans-fichier", "texte"])
+@pytest.mark.parametrize("donnees", [None, b"pas une image", _bombe(), _image("GIF"), _tronque()],
+                         ids=["sans-fichier", "texte", "bombe", "gif", "tronque"])
 def test_envoi_refuse_400(admin, donnees):
     _envoyer(admin)
     actuelle = _profil(admin.application).photo_fichier
@@ -132,3 +135,38 @@ def test_fichier_orphelin_404(public_avec_photo):
     client, _ = public_avec_photo
     orphelin = enregistrer_photo(client.application.config["CV"].DOSSIER_PHOTOS, b"autre")
     assert client.get(f"/photo/{orphelin}").status_code == 404
+
+
+def test_ancienne_url_publique_404_apres_remplacement(admin, monkeypatch):
+    _envoyer(admin)
+    ancienne = _profil(admin.application).photo_fichier
+    _envoyer(admin, _image(taille=(300, 300)))
+    nouvelle = _profil(admin.application).photo_fichier
+    monkeypatch.setenv("CV_ROLE", "public")  # même dossier de données que l'admin
+    public = create_app(Config()).test_client()
+    assert public.get(f"/photo/{ancienne}").status_code == 404
+    assert public.get(f"/photo/{nouvelle}").status_code == 200
+
+
+def test_photo_absente_du_disque_initiales(public_avec_photo):
+    # Base restaurée sans le dossier photos/ : pas d'image cassée ni d'og:image en 404.
+    client, nom = public_avec_photo
+    (client.application.config["CV"].DOSSIER_PHOTOS / nom).unlink()
+    corps = client.get("/devops").get_data(as_text=True)
+    assert "og:image" not in corps and 'class="photo" aria-hidden="true"' in corps
+
+
+def test_profil_absent_message_dedie(fabrique_app):
+    def sans_profil(s):
+        s.delete(s.get(Profil, 1))
+    admin = fabrique_app(role="admin", modifier=sans_profil).test_client()
+    r = _envoyer(admin)
+    corps = r.get_data(as_text=True)
+    assert r.status_code == 400 and "Enregistrez d" in corps and "pas une photo lisible" not in corps
+
+
+def test_photo_trop_lourde_reste_sur_le_profil(admin):
+    lourde = b"\xff\xd8" + b"\x00" * (17 * 1024 * 1024)
+    r = _envoyer(admin, lourde)
+    corps = r.get_data(as_text=True)
+    assert r.status_code == 413 and "16 Mio" in corps and 'id="photo-fichier"' in corps

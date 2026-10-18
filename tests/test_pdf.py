@@ -7,11 +7,13 @@ import pytest
 from pypdf import PdfReader
 from sqlalchemy import select
 
-from cv import pdf
+from cv import medias, pdf
 from cv.models import Version, Visite
 from tests.conftest import EMAIL
+from tests.test_medias import _image
 
 NAVIGATEUR = {"User-Agent": "Mozilla/5.0 (X11; Linux)"}
+ORIGINE = {"Origin": "http://localhost"}
 
 
 @pytest.fixture(autouse=True)
@@ -163,6 +165,49 @@ def test_cache_borne(tmp_path, monkeypatch):
     # Le plus récent reste, le plus ancien est parti.
     assert pdf.pdf_en_cache(tmp_path, f"<p>{pdf.CACHE_MAX + 4}</p>")[0]
     assert len(list(tmp_path.iterdir())) == pdf.CACHE_MAX
+
+
+def test_cache_elague_par_un_autre_processus(tmp_path, monkeypatch):
+    # Lu, puis élagué par l'autre conteneur avant le rafraîchissement de sa date :
+    # le contenu est déjà en mémoire, la réponse ne doit pas échouer.
+    monkeypatch.setattr(pdf, "rendre_pdf", lambda html: html.encode())
+    pdf.pdf_en_cache(tmp_path, "<p>x</p>")
+
+    def disparu(chemin, *args):
+        raise FileNotFoundError(chemin)
+    monkeypatch.setattr(pdf.os, "utime", disparu)
+    assert pdf.pdf_en_cache(tmp_path, "<p>x</p>")[0] == b"<p>x</p>"
+
+
+def test_cache_ecriture_interrompue_sans_tmp(tmp_path, monkeypatch):
+    monkeypatch.setattr(pdf, "rendre_pdf", lambda html: html.encode())
+
+    def echec(*args):
+        raise OSError("disque plein")
+    monkeypatch.setattr(medias.os, "replace", echec)
+    with pytest.raises(OSError):
+        pdf.pdf_en_cache(tmp_path, "<p>x</p>")
+    assert list(tmp_path.iterdir()) == []
+
+
+@pytest.mark.parametrize("action", ["envoi", "suppression"])
+def test_changer_la_photo_vide_le_cache(fabrique_app, action):
+    # Les PDF en cache portent la photo incorporée : une photo retirée ne doit pas
+    # survivre sur disque jusqu'à l'élagage.
+    admin = fabrique_app(role="admin").test_client()
+    id_ = _id(admin.application, "devops")
+    envoyer = {"photo": (BytesIO(_image()), "p.jpg")}
+    admin.post("/admin/profil/photo", headers=ORIGINE, data=envoyer,
+               content_type="multipart/form-data")
+    assert admin.get(f"/admin/versions/{id_}/cv.pdf").status_code == 200
+    assert _cache(admin.application)
+    if action == "envoi":
+        admin.post("/admin/profil/photo", headers=ORIGINE,
+                   data={"photo": (BytesIO(_image(taille=(300, 300))), "p.jpg")},
+                   content_type="multipart/form-data")
+    else:
+        admin.post("/admin/profil/photo/supprimer", headers=ORIGINE)
+    assert _cache(admin.application) == []
 
 
 def test_aucune_ressource_externe(monkeypatch):

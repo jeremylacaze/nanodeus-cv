@@ -6,13 +6,17 @@ téléphone et l'email : il n'est jamais écrit sur disque.
 import base64
 import hashlib
 import os
-import tempfile
 from pathlib import Path
 
 from flask import render_template
+from PIL import ImageFile
 from weasyprint import HTML, URLFetcher
 
-from cv.medias import qr, url_version
+from cv.medias import ecrire_atomiquement, qr, url_version
+
+# WeasyPrint passe ce réglage global à True dès son import : une photo tronquée serait
+# alors acceptée et complétée en gris. Le PDF n'incorpore que des images déjà propres.
+ImageFile.LOAD_TRUNCATED_IMAGES = False
 
 CACHE_MAX = 40
 
@@ -56,16 +60,21 @@ def pdf_en_cache(dossier: Path, html: str) -> tuple[bytes, str]:
     except FileNotFoundError:
         pass
     else:
-        os.utime(chemin)  # récent : l'élagage le garde
+        try:
+            os.utime(chemin)  # récent : l'élagage le garde
+        except FileNotFoundError:
+            pass  # élagué entre-temps par l'autre processus : le contenu est déjà lu
         return contenu, etag
     contenu = rendre_pdf(html)
-    dossier.mkdir(parents=True, exist_ok=True)
-    descripteur, temporaire = tempfile.mkstemp(dir=dossier, suffix=".tmp")
-    with os.fdopen(descripteur, "wb") as f:
-        f.write(contenu)
-    os.replace(temporaire, chemin)
+    ecrire_atomiquement(chemin, contenu)
     anciens = sorted(dossier.glob("*.pdf"), key=_date, reverse=True)[CACHE_MAX:]
     for ancien in anciens:
         if ancien != chemin:
             ancien.unlink(missing_ok=True)
     return contenu, etag
+
+
+def vider_cache(dossier: Path) -> None:
+    """Les PDF en cache incorporent la photo : ils partent quand elle change."""
+    for fichier in dossier.glob("*.pdf"):
+        fichier.unlink(missing_ok=True)

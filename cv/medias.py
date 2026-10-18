@@ -12,7 +12,7 @@ from pathlib import Path
 
 from flask import abort, send_file
 import segno
-from PIL import Image, ImageOps
+from PIL import Image, ImageCms, ImageOps
 
 from cv.models import Profil
 
@@ -25,8 +25,10 @@ NOM_PHOTO = re.compile(r"[0-9a-f]{16}\.jpg")
 
 FORMATS_QR = {"svg": "image/svg+xml", "png": "image/png"}
 
-# Au-delà, Pillow lève DecompressionBombError au lieu d'un simple avertissement.
+# Réglage global au processus : Pillow avertit au-delà de cette taille et ne lève
+# DecompressionBombError qu'au double. Le refus net vient du contrôle de traiter_photo.
 Image.MAX_IMAGE_PIXELS = PIXELS_MAX
+SRGB = ImageCms.createProfile("sRGB")
 
 
 class PhotoInvalide(ValueError):
@@ -40,7 +42,10 @@ def traiter_photo(donnees: bytes) -> bytes:
         # Image.open ne lit que l'en-tête : la taille se contrôle avant tout décodage.
         if img.format not in FORMATS_PHOTO or img.width * img.height > PIXELS_MAX:
             raise PhotoInvalide
+        icc = img.info.get("icc_profile")
         img = ImageOps.exif_transpose(img)
+        if icc and img.mode in ("RGB", "CMYK"):
+            img = _vers_srgb(img, icc)
         if img.mode in ("RGBA", "LA", "P"):
             fond = Image.new("RGB", img.size, (255, 255, 255))
             rgba = img.convert("RGBA")
@@ -58,14 +63,34 @@ def traiter_photo(donnees: bytes) -> bytes:
     return sortie.getvalue()
 
 
+def _vers_srgb(img: Image.Image, icc: bytes) -> Image.Image:
+    """Couleurs converties en sRGB (une photo d'iPhone est en Display P3) : le profil
+    disparaît ensuite avec les autres métadonnées, sans ternir l'image."""
+    try:
+        return ImageCms.profileToProfile(img, ImageCms.ImageCmsProfile(BytesIO(icc)), SRGB,
+                                         outputMode="RGB")
+    except (ImageCms.PyCMSError, OSError):
+        return img  # profil illisible : les pixels sont gardés tels quels
+
+
+def ecrire_atomiquement(chemin: Path, contenu: bytes) -> None:
+    """Fichier temporaire puis os.replace : un lecteur ne voit jamais un fichier à
+    moitié écrit, et un échec ne laisse aucun .tmp derrière lui."""
+    chemin.parent.mkdir(parents=True, exist_ok=True)
+    descripteur, temporaire = tempfile.mkstemp(dir=chemin.parent, suffix=".tmp")
+    try:
+        with os.fdopen(descripteur, "wb") as f:
+            f.write(contenu)
+        os.replace(temporaire, chemin)
+    except BaseException:
+        Path(temporaire).unlink(missing_ok=True)
+        raise
+
+
 def enregistrer_photo(dossier: Path, donnees: bytes) -> str:
-    """Écrit la photo (atomiquement) et renvoie son nom."""
+    """Écrit la photo et renvoie son nom."""
     nom = hashlib.sha256(donnees).hexdigest()[:16] + ".jpg"
-    dossier.mkdir(parents=True, exist_ok=True)
-    descripteur, temporaire = tempfile.mkstemp(dir=dossier, suffix=".tmp")
-    with os.fdopen(descripteur, "wb") as f:
-        f.write(donnees)
-    os.replace(temporaire, dossier / nom)
+    ecrire_atomiquement(dossier / nom, donnees)
     return nom
 
 

@@ -22,7 +22,7 @@ _SLUG = re.compile(SLUG)
 def _page(slug: str | None):
     if slug is not None and not _SLUG.fullmatch(slug):
         abort(404)
-    vue = assembler_vue(g.db, slug, g.lang)
+    vue = assembler_vue(g.db, slug, g.lang, config=current_app.config["CV"])
     if vue is None:
         abort(404)
     racine = current_app.config["CV"].URL_PUBLIQUE or request.host_url.rstrip("/")
