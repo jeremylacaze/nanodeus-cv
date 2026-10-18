@@ -5,9 +5,9 @@ from sqlalchemy import select
 
 from cv.admin import bp
 from cv.admin.formulaires import MAX_TEXTE, Champ, appliquer, lire, valeurs_de
-from cv.admin.stock import TYPES, supprimer_element
-from cv.admin.versions import (CHAMPS_VERSION, definir_par_defaut, supprimer_version,
-                               verifier_version)
+from cv.admin.stock import PAR_ELEMENT, TYPES, supprimer_element
+from cv.admin.versions import (CHAMPS_VERSION, composer, definir_par_defaut,
+                               elements_du_stock, supprimer_version, verifier_version)
 from cv.models import Profil, Version
 from cv.vue import assembler_vue
 
@@ -121,6 +121,18 @@ def versions():
     return render_template("admin/versions.html", versions=liste)
 
 
+def _page_version(version: Version | None, valeurs: dict, erreurs: dict,
+                  composition: dict | None = None, erreurs_composition: dict | None = None,
+                  statut: int = 200):
+    """Page d'une version. `composition` : valeurs soumises à réafficher après une erreur."""
+    lignes = elements_du_stock(g.db, version) if version else {}
+    return render_template(
+        "admin/version.html", version=version, champs_version=CHAMPS_VERSION,
+        valeurs=valeurs, erreurs=erreurs, lignes=lignes, composition=composition,
+        erreurs_composition=erreurs_composition or {}, titres={
+            te: t.titre for te, t in PAR_ELEMENT.items()}), statut
+
+
 def _editer_version(version: Version | None):
     if request.method == "POST":
         valeurs, erreurs = lire(request.form, CHAMPS_VERSION)
@@ -133,11 +145,9 @@ def _editer_version(version: Version | None):
             appliquer(version, valeurs)
             g.db.commit()
             return ok(f"/admin/versions/{version.id}")
-        return render_template("admin/version.html", version=version, champs_version=CHAMPS_VERSION,
-                               valeurs=request.form.to_dict(), erreurs=erreurs), 400
+        return _page_version(version, request.form.to_dict(), erreurs, statut=400)
     valeurs = valeurs_de(version, CHAMPS_VERSION) if version else {"statut": "brouillon"}
-    return render_template("admin/version.html", version=version, champs_version=CHAMPS_VERSION,
-                           valeurs=valeurs, erreurs={})
+    return _page_version(version, valeurs, {})
 
 
 @bp.route("/versions/nouvelle", methods=["GET", "POST"])
@@ -148,6 +158,16 @@ def version_nouvelle():
 @bp.route("/versions/<int:id_>", methods=["GET", "POST"])
 def version(id_):
     return _editer_version(_version(id_))
+
+
+@bp.post("/versions/<int:id_>/composition")
+def version_composition(id_):
+    version = _version(id_)
+    erreurs = composer(g.db, version, request.form)
+    if not erreurs:
+        return ok(f"/admin/versions/{version.id}#composition")
+    return _page_version(version, valeurs_de(version, CHAMPS_VERSION), {},
+                         request.form.to_dict(), erreurs, 400)
 
 
 @bp.post("/versions/<int:id_>/par-defaut")

@@ -1,10 +1,13 @@
-"""Versions du CV : métadonnées, version par défaut et suppression."""
+"""Versions du CV : métadonnées, composition, version par défaut et suppression."""
 import re
+from collections.abc import Mapping
+from dataclasses import dataclass
 
 from sqlalchemy import select, update
 
-from cv.admin.formulaires import Champ
-from cv.models import SLUG, STATUTS, Version
+from cv.admin.formulaires import MAX_TEXTE, Champ
+from cv.admin.stock import PAR_ELEMENT
+from cv.models import SLUG, STATUTS, TYPES_ELEMENT, Version, VersionElement
 
 # Chemins du site public qu'un slug masquerait.
 SLUGS_RESERVES = frozenset({"en", "contact", "static", "admin"})
@@ -61,3 +64,88 @@ def supprimer_version(session, version: Version) -> bool:
     session.delete(version)
     session.commit()
     return True
+
+
+ORDRE_MAX = 999
+_ENTIER = re.compile(r"[0-9]{1,3}")
+
+
+@dataclass
+class LigneComposition:
+    type_element: str
+    element_id: int
+    libelle: str
+    coche: bool
+    ordre: int
+    missions_fr: str
+    missions_en: str
+
+
+def _coches(session, version: Version) -> dict[tuple[str, int], VersionElement]:
+    return {(c.type_element, c.element_id): c for c in session.scalars(
+        select(VersionElement).where(VersionElement.version_id == version.id))}
+
+
+def elements_du_stock(session, version: Version) -> dict[str, list[LigneComposition]]:
+    """Tout le stock, type par type : les éléments cochés d'abord, dans l'ordre de la
+    version, puis les autres dans l'ordre du stock."""
+    coches = _coches(session, version)
+    resultat = {}
+    for type_element in TYPES_ELEMENT:
+        t = PAR_ELEMENT[type_element]
+        lignes = []
+        for obj in session.scalars(select(t.modele).order_by(*t.tri)):
+            c = coches.get((type_element, obj.id))
+            lignes.append(LigneComposition(
+                type_element, obj.id, t.libelle(obj), c is not None,
+                c.ordre if c else 0, (c.missions_fr or "") if c else "",
+                (c.missions_en or "") if c else ""))
+        # Tri stable : l'ordre du stock départage les non cochés et les égalités.
+        lignes.sort(key=lambda ligne: (not ligne.coche, ligne.ordre if ligne.coche else 0))
+        resultat[type_element] = lignes
+    return resultat
+
+
+def _surcharge(texte: str | None) -> str | None:
+    texte = (texte or "").replace("\r\n", "\n").replace("\r", "\n")
+    return texte if texte.strip() else None
+
+
+def composer(session, version: Version, donnees: Mapping[str, str]) -> dict[str, str]:
+    """Applique le formulaire de composition. Seuls les éléments existants du stock sont
+    lus : un id inconnu est ignoré. En cas d'erreur, rien n'est écrit."""
+    voulues, erreurs = {}, {}
+    for type_element in TYPES_ELEMENT:
+        modele = PAR_ELEMENT[type_element].modele
+        for id_ in session.scalars(select(modele.id)):
+            cle = f"{type_element}-{id_}"
+            if f"coche-{cle}" not in donnees:
+                continue
+            brut = (donnees.get(f"ordre-{cle}") or "").strip() or "0"
+            if not _ENTIER.fullmatch(brut):
+                erreurs[f"ordre-{cle}"] = f"Un entier de 0 à {ORDRE_MAX}."
+                continue
+            missions = {}
+            if type_element == "entree":
+                for langue in ("fr", "en"):
+                    nom = f"missions_{langue}-{id_}"
+                    missions[f"missions_{langue}"] = _surcharge(donnees.get(nom))
+                    if len(missions[f"missions_{langue}"] or "") > MAX_TEXTE:
+                        erreurs[nom] = f"{MAX_TEXTE} caractères au plus."
+            voulues[(type_element, id_)] = {"ordre": int(brut), **missions}
+    if erreurs:
+        return erreurs
+    existantes = _coches(session, version)
+    for cle, coche in existantes.items():
+        if cle not in voulues:
+            session.delete(coche)
+    for (type_element, id_), champs in voulues.items():
+        coche = existantes.get((type_element, id_))
+        if coche is None:
+            coche = VersionElement(version_id=version.id, type_element=type_element,
+                                   element_id=id_)
+            session.add(coche)
+        for nom, valeur in champs.items():
+            setattr(coche, nom, valeur)
+    session.commit()
+    return {}
