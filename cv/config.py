@@ -29,6 +29,8 @@ class Config:
         self.SMTP_TLS = os.environ.get("CV_SMTP_TLS", "starttls")
         if self.SMTP_TLS not in MODES_TLS:
             raise ValueError(f"CV_SMTP_TLS inconnu : {self.SMTP_TLS!r}")
+        if self.SMTP_TLS == "aucun" and self.SMTP_UTILISATEUR:
+            raise ValueError("CV_SMTP_TLS=aucun : le mot de passe SMTP circulerait en clair")
         self.EMAIL_EXPEDITEUR = os.environ.get("CV_EMAIL_EXPEDITEUR", "cv@nanodeus.com")
         # Boîte perso de Jeremy : posée sur le serveur seulement, jamais dans le dépôt.
         self.EMAIL_DESTINATAIRE = os.environ.get("CV_EMAIL_DESTINATAIRE", "")

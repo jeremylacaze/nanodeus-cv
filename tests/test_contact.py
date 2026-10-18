@@ -1,4 +1,5 @@
 """Demande de contact : validation, limites, message construit, envoi SMTP."""
+import ssl
 from datetime import datetime, timedelta
 
 import pytest
@@ -131,8 +132,8 @@ def test_envoi_non_configure(session, monkeypatch):
 class FauxSMTP:
     instances = []
 
-    def __init__(self, hote, port, timeout):
-        self.appels = [("connexion", hote, port, timeout)]
+    def __init__(self, hote, port, timeout, context=None):
+        self.appels, self.contextes = [("connexion", hote, port, timeout)], [context]
         FauxSMTP.instances.append(self)
 
     def __enter__(self):
@@ -141,8 +142,9 @@ class FauxSMTP:
     def __exit__(self, *exc):
         self.appels.append(("fermeture",))
 
-    def starttls(self):
+    def starttls(self, context=None):
         self.appels.append(("starttls",))
+        self.contextes.append(context)
 
     def login(self, utilisateur, mot_de_passe):
         self.appels.append(("login", utilisateur, mot_de_passe))
@@ -161,6 +163,30 @@ def test_transport_smtp(config, monkeypatch):
     assert FauxSMTP.instances[0].appels == [
         ("connexion", "smtp.test.invalid", 587, 10), ("starttls",), ("login", "u", "p"),
         ("envoi", "[CV · lead-tech] Demande de contact — Alice (ACME)"), ("fermeture",)]
+    _verifie(FauxSMTP.instances[0].contextes[1])
+
+
+def _verifie(contexte):
+    # Sans contexte, smtplib chiffre sans vérifier le certificat : le mot de passe
+    # partirait chez n'importe quel intermédiaire.
+    assert isinstance(contexte, ssl.SSLContext)
+    assert contexte.verify_mode == ssl.CERT_REQUIRED and contexte.check_hostname
+
+
+def test_transport_smtp_ssl_verifie(config, monkeypatch):
+    monkeypatch.setenv("CV_SMTP_TLS", "ssl")
+    monkeypatch.setattr(courriel.smtplib, "SMTP_SSL", FauxSMTP)
+    FauxSMTP.instances.clear()
+    config = Config()
+    EnvoiSMTP(config).envoyer(construire_message(_demande(), config))
+    _verifie(FauxSMTP.instances[0].contextes[0])
+
+
+def test_login_sans_chiffrement_refuse(monkeypatch):
+    monkeypatch.setenv("CV_SMTP_TLS", "aucun")
+    monkeypatch.setenv("CV_SMTP_UTILISATEUR", "u")
+    with pytest.raises(ValueError):
+        Config()
 
 
 def test_transport_smtp_sans_tls_ni_login(config, monkeypatch):
