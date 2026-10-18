@@ -23,7 +23,7 @@ _INTERDIT = r"@\s<>()\[\],;:\"\\\x00-\x1f\x7f"
 _EMAIL = re.compile(f"[^{_INTERDIT}]+@[^{_INTERDIT}]+\\.[^{_INTERDIT}]+")
 # Contrôles C0 et C1, plus les séparateurs de ligne Unicode : str.splitlines() coupe
 # sur chacun, et email.policy refuserait alors l'en-tête au moment de l'envoi.
-_CONTROLE = re.compile(r"[\x00-\x1f\x7f-\x9f\u2028\u2029]")
+CONTROLE = re.compile(r"[\x00-\x1f\x7f-\x9f\u2028\u2029]")
 
 
 @dataclass
@@ -51,7 +51,7 @@ def valider(donnees: Mapping[str, str]) -> tuple[Formulaire, dict[str, str]]:
         erreurs["message"] = _("Le message dépasse %(n)s caractères.", n=MAX_MESSAGE)
     for champ in ("nom", "entreprise"):
         valeur = getattr(f, champ)
-        if len(valeur) > MAX_LIGNE or _CONTROLE.search(valeur):
+        if len(valeur) > MAX_LIGNE or CONTROLE.search(valeur):
             erreurs[champ] = _("Une seule ligne, %(n)s caractères au plus.", n=MAX_LIGNE)
     return f, erreurs
 

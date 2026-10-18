@@ -8,11 +8,6 @@ from tests.conftest import EMAIL
 DEHORS = {"REMOTE_ADDR": "203.0.113.5"}
 
 
-@pytest.fixture
-def admin(fabrique_app):
-    return fabrique_app(role="admin").test_client()
-
-
 @pytest.mark.parametrize("adresse, attendu", [
     ("100.64.0.7", True), ("100.127.255.254", True), ("127.0.0.1", True), ("::1", True),
     ("fd7a:115c:a1e0::1", True), ("::ffff:100.64.0.7", True),
