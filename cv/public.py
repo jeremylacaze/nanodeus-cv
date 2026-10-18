@@ -1,13 +1,15 @@
 """Routes du site public : une URL par version, en français et en anglais."""
 import re
 
-from flask import (Blueprint, abort, current_app, g, make_response, redirect,
+from flask import (Blueprint, abort, current_app, g, jsonify, make_response, redirect,
                    render_template, request)
+from flask_babel import gettext as _
 
-from cv.journal import journaliser
+from cv.contact import Formulaire, enregistrer, envoyer_demande, limite_atteinte, valider
+from cv.journal import empreinte, journaliser, maintenant_utc
 from cv.langue import suggerer_anglais
-from cv.models import SLUG
-from cv.vue import assembler_vue
+from cv.models import SLUG, Version
+from cv.vue import assembler_vue, champ, version_publique
 
 bp = Blueprint("public", __name__)
 _SLUG = re.compile(SLUG)
@@ -48,3 +50,79 @@ def en_sans_barre():
 @bp.get("/en/<slug>")
 def version(slug):
     return _page(slug)
+
+
+def _version_ou_404(slug: str) -> Version:
+    version = version_publique(g.db, slug) if _SLUG.fullmatch(slug) else None
+    if version is None:
+        abort(404)
+    return version
+
+
+def _prefixe() -> str:
+    return "/en" if g.lang == "en" else ""
+
+
+def _veut_json() -> bool:
+    return request.accept_mimetypes.best_match(["text/html", "application/json"]) \
+        == "application/json"
+
+
+def _reponse_contact(version: Version, statut: int, ok: bool, message: str = "",
+                     erreurs: dict | None = None, formulaire: Formulaire | None = None):
+    """JSON pour la modale, page HTML sans JavaScript. Sans `formulaire`, la page
+    est une confirmation : rien à renvoyer, donc pas de doublon possible."""
+    erreurs = erreurs or {}
+    if _veut_json():
+        reponse = jsonify(ok=ok, message=message, erreurs=erreurs)
+    else:
+        reponse = make_response(render_template(
+            "contact.html", titre_version=champ(version, "titre", g.lang),
+            retour=f"{_prefixe()}/{version.slug}", action=f"{_prefixe()}/{version.slug}/contact",
+            valeurs=formulaire, erreurs=erreurs, message=message))
+    reponse.status_code = statut
+    reponse.headers["X-Robots-Tag"] = "noindex"
+    return reponse
+
+
+@bp.get("/<slug>/contact")
+@bp.get("/en/<slug>/contact")
+def contact(slug):
+    version = _version_ou_404(slug)
+    journaliser(g.db, request, current_app.config["CV"], "contact", version.slug, g.lang)
+    return _reponse_contact(version, 200, True, formulaire=Formulaire())
+
+
+@bp.post("/<slug>/contact/ouverture")
+@bp.post("/en/<slug>/contact/ouverture")
+def ouverture_contact(slug):
+    """Balise de la modale (sendBeacon) : l'ouverture compte comme une visite du contact."""
+    version = _version_ou_404(slug)
+    journaliser(g.db, request, current_app.config["CV"], "contact", version.slug, g.lang)
+    return "", 204
+
+
+@bp.post("/<slug>/contact")
+@bp.post("/en/<slug>/contact")
+def envoyer_contact(slug):
+    version = _version_ou_404(slug)
+    merci = _("Merci ! Jeremy vous répondra à l'adresse indiquée.")
+    formulaire, erreurs = valider(request.form)
+    if formulaire.piege:
+        # Un robot a rempli le champ invisible : il croit avoir réussi, rien ne part.
+        return _reponse_contact(version, 200, True, merci)
+    if erreurs:
+        return _reponse_contact(version, 400, False, _("Vérifiez les champs signalés."),
+                                erreurs, formulaire)
+    config, maintenant = current_app.config["CV"], maintenant_utc()
+    # IP seule (le User-Agent se change trop facilement) ; elle n'est ni stockée ni loguée.
+    cle = empreinte(g.db, config.SEL_HMAC, request.remote_addr or "", maintenant=maintenant)
+    if limite_atteinte(g.db, cle, maintenant):
+        return _reponse_contact(version, 429, False,
+                                _("Trop de demandes pour le moment. Réessayez plus tard."),
+                                formulaire=formulaire)
+    demande = enregistrer(g.db, formulaire, version.slug, g.lang, cle, maintenant)
+    if envoyer_demande(g.db, demande, config, current_app.extensions["cv_envoi"]):
+        return _reponse_contact(version, 200, True, merci)
+    return _reponse_contact(version, 202, False, _(
+        "L'envoi n'a pas abouti, mais votre demande est bien enregistrée : Jeremy la verra."))

@@ -1,0 +1,30 @@
+{#- Variables : action, valeurs (Formulaire), erreurs ({champ: texte}), message. -#}
+{% macro champ(nom, libelle, type="text", requis=False, max=100, auto="") %}
+  <div class="champ">
+    <label for="contact-{{ nom }}">{{ libelle }}</label>
+    {% if type == "textarea" %}
+      <textarea id="contact-{{ nom }}" name="{{ nom }}" rows="6" maxlength="{{ max }}"
+        {%- if requis %} required{% endif %} aria-describedby="contact-{{ nom }}-erreur"
+        {%- if erreurs[nom] %} aria-invalid="true"{% endif %}>{{ valeurs[nom] }}</textarea>
+    {% else %}
+      <input id="contact-{{ nom }}" name="{{ nom }}" type="{{ type }}" maxlength="{{ max }}"
+        value="{{ valeurs[nom] }}"{% if auto %} autocomplete="{{ auto }}"{% endif %}
+        {%- if requis %} required{% endif %} aria-describedby="contact-{{ nom }}-erreur"
+        {%- if erreurs[nom] %} aria-invalid="true"{% endif %}>
+    {% endif %}
+    <p class="erreur-champ" id="contact-{{ nom }}-erreur" data-erreur="{{ nom }}">{{ erreurs[nom] }}</p>
+  </div>
+{% endmacro %}
+<form class="formulaire-contact" method="post" action="{{ action }}">
+  {{ champ("email", _("Votre email"), type="email", requis=True, max=254, auto="email") }}
+  {{ champ("message", _("Message"), type="textarea", requis=True, max=2000) }}
+  {{ champ("nom", _("Nom (facultatif)"), auto="name") }}
+  {{ champ("entreprise", _("Entreprise (facultatif)"), auto="organization") }}
+  <div class="piege" aria-hidden="true">
+    <label for="contact-site-web">{{ _("Ne pas remplir ce champ") }}</label>
+    <input id="contact-site-web" name="site_web" type="text" tabindex="-1" autocomplete="off">
+  </div>
+  <p class="retour" role="status" aria-live="polite">{{ message }}</p>
+  <p class="mention">{{ _("Ces informations ne servent qu'à vous répondre.") }}</p>
+  <button type="submit" class="btn-contact">{{ _("Envoyer") }}</button>
+</form>

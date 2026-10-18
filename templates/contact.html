@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block meta %}<meta name="robots" content="noindex">{% endblock %}
+{% block titre %}{{ _("Demander l'accès") }}{% endblock %}
+{% block contenu %}
+  <main class="page-contact">
+    <p><a href="{{ retour }}">{{ _("Retour au CV") }}</a></p>
+    <h1>{{ _("Demander l'accès") }}</h1>
+    <p class="sous-titre">{{ titre_version }}</p>
+    {% if valeurs %}
+      {% include "_formulaire_contact.html" %}
+    {% else %}
+      <p class="retour" role="status">{{ message }}</p>
+    {% endif %}
+  </main>
+{% endblock %}

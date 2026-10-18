@@ -6,7 +6,7 @@ import pytest
 from tests.conftest import EMAIL
 
 URLS = ["/", "/devops", "/lead-tech", "/en/", "/en/devops", "/en/lead-tech",
-        "/inconnue", "/en/inconnue"]
+        "/inconnue", "/en/inconnue", "/devops/contact", "/en/devops/contact"]
 
 
 @pytest.fixture
@@ -191,7 +191,9 @@ def test_lien_autre_langue_reste_sur_le_site(client, url):
 @pytest.mark.parametrize("chemin, attendu", [
     ("/", "/en/"), ("/devops", "/en/devops"), ("/en/", "/"), ("/en", "/"),
     ("/en/lead-tech", "/lead-tech"), ("/en/\t/evil.example", "/"),
-    ("/a/b", "/en/"), ("/Majuscule", "/en/")])
+    ("/a/b", "/en/"), ("/Majuscule", "/en/"), ("/devops/contact", "/en/devops/contact"),
+    ("/en/lead-tech/contact", "/lead-tech/contact"), ("/contact", "/en/contact"),
+    ("/devops/contact/ouverture", "/en/")])
 def test_url_autre_langue(chemin, attendu):
     from cv.langue import url_autre_langue
     assert url_autre_langue(chemin) == attendu

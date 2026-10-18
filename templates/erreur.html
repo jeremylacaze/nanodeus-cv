@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block meta %}<meta name="robots" content="noindex">{% endblock %}
+{% block titre %}{{ titre }}{% endblock %}
+{% block contenu %}
+  <main class="erreur">
+    <h1>{{ titre }}</h1>
+    <p>{{ message }}</p>
+    <p><a href="{{ '/en/' if lang == 'en' else '/' }}">{{ _("Retour au CV") }}</a></p>
+  </main>
+{% endblock %}

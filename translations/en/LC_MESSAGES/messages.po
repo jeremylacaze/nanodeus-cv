@@ -1,13 +1,14 @@
 # English translations for nanodeus-cv.
 # Copyright (C) 2026 ORGANIZATION
-# This file is distributed under the same license as the nanodeus-cv project.
+# This file is distributed under the same license as the nanodeus-cv
+# project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: nanodeus-cv VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-18 20:16+0200\n"
+"POT-Creation-Date: 2026-10-18 20:20+0200\n"
 "PO-Revision-Date: 2026-10-18 19:17+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -30,11 +31,23 @@ msgstr "Artifacts"
 msgid "Centres d'intérêt"
 msgstr "Interests"
 
+msgid "Ces informations ne servent qu'à vous répondre."
+msgstr "This information is only used to reply to you."
+
+msgid "Cette requête n'a pas pu être acceptée."
+msgstr "This request could not be accepted."
+
 msgid "Chiffres clés"
 msgstr "Key figures"
 
 msgid "Demander l'accès"
 msgstr "Request access"
+
+msgid "Entreprise (facultatif)"
+msgstr "Company (optional)"
+
+msgid "Envoyer"
+msgstr "Send"
 
 msgid "Erreur"
 msgstr "Error"
@@ -48,12 +61,32 @@ msgstr "Education"
 msgid "Indiquez une adresse email valide."
 msgstr "Please enter a valid email address."
 
+msgid ""
+"L'envoi n'a pas abouti, mais votre demande est bien enregistrée : Jeremy "
+"la verra."
+msgstr "Sending failed, but your request has been saved: Jeremy will see it."
+
 msgid "Langue"
 msgstr "Language"
+
+msgid "Le formulaire envoyé est trop volumineux."
+msgstr "The form you sent is too large."
 
 #, python-format
 msgid "Le message dépasse %(n)s caractères."
 msgstr "The message is longer than %(n)s characters."
+
+msgid "Merci ! Jeremy vous répondra à l'adresse indiquée."
+msgstr "Thank you! Jeremy will reply to the address you gave."
+
+msgid "Message"
+msgstr "Message"
+
+msgid "Ne pas remplir ce champ"
+msgstr "Leave this field empty"
+
+msgid "Nom (facultatif)"
+msgstr "Name (optional)"
 
 #, python-format
 msgid "Objectif : %(mission)s"
@@ -74,6 +107,12 @@ msgstr "Next mission"
 msgid "Projets personnels"
 msgstr "Personal projects"
 
+msgid "Requête refusée"
+msgstr "Request refused"
+
+msgid "Requête trop volumineuse"
+msgstr "Request too large"
+
 msgid "Retour au CV"
 msgstr "Back to the résumé"
 
@@ -87,12 +126,24 @@ msgstr "Stack"
 msgid "Tests · soft skills (%(n)s/%(n)s passés)"
 msgstr "Tests · soft skills (%(n)s/%(n)s passed)"
 
+msgid "Trop de demandes"
+msgstr "Too many requests"
+
+msgid "Trop de demandes pour le moment. Réessayez plus tard."
+msgstr "Too many requests for now. Please try again later."
+
 msgid "Une erreur est survenue"
 msgstr "Something went wrong"
 
 #, python-format
 msgid "Une seule ligne, %(n)s caractères au plus."
 msgstr "A single line, %(n)s characters at most."
+
+msgid "Votre email"
+msgstr "Your email"
+
+msgid "Vérifiez les champs signalés."
+msgstr "Please check the highlighted fields."
 
 msgid "en attente d'un runner…"
 msgstr "waiting for a runner…"

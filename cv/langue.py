@@ -9,7 +9,8 @@ from flask import g, request
 from cv.models import SLUG
 
 LANGUES = ("fr", "en")
-_CHEMIN_DE_PAGE = re.compile(f"/(?:{SLUG})?")
+# /, /<slug> et /<slug>/contact : les seuls chemins recopiés d'une langue à l'autre.
+_CHEMIN_DE_PAGE = re.compile(f"/(?:(?:{SLUG})(?:/contact)?)?")
 
 
 def langue_du_chemin(chemin: str) -> str:
@@ -19,7 +20,7 @@ def langue_du_chemin(chemin: str) -> str:
 def url_autre_langue(chemin: str) -> str:
     """Même page dans l'autre langue : /devops ↔ /en/devops, / ↔ /en/.
 
-    Seul un chemin de page réelle (/<slug>) est recopié ; tout autre chemin (404)
+    Seul un chemin de page réelle (/<slug>, /<slug>/contact) est recopié ; tout autre chemin (404)
     renvoie à l'accueil de l'autre langue. Recopier un chemin arbitraire ouvrirait
     la porte à un lien vers un autre site (/en//ailleurs, /en/%09/ailleurs…)."""
     anglais = langue_du_chemin(chemin) == "en"
