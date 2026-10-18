@@ -12,11 +12,11 @@
   <h2 id="photo">Photo</h2>
   {% if erreur_photo %}<p class="message alerte" role="alert">{{ erreur_photo }}</p>{% endif %}
   {% if photo %}<p><img class="photo-profil" src="/admin/photo/{{ photo }}" alt="Photo actuelle" width="128" height="128"></p>
-  {% else %}<p class="aide">Aucune photo : le CV affiche les initiales.</p>{% endif %}
+  {% else %}<p class="muted">Aucune photo : le CV affiche les initiales.</p>{% endif %}
   <form method="post" action="/admin/profil/photo" enctype="multipart/form-data">
     <label for="photo-fichier">Nouvelle photo (JPEG, PNG ou WEBP)</label>
     <input id="photo-fichier" type="file" name="photo" accept="image/jpeg,image/png,image/webp" required>
-    <p class="aide">Recadrée au centre en 512 × 512 ; les métadonnées (EXIF, position GPS) sont retirées.</p>
+    <p class="muted">Recadrée au centre en 512 × 512 ; les métadonnées (EXIF, position GPS) sont retirées.</p>
     <div class="actions"><button type="submit">Envoyer la photo</button></div>
   </form>
   {% if photo %}

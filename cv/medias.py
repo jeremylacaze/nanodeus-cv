@@ -11,6 +11,7 @@ from io import BytesIO
 from pathlib import Path
 
 from flask import abort, send_file
+import segno
 from PIL import Image, ImageOps
 
 from cv.models import Profil
@@ -20,6 +21,8 @@ PIXELS_MAX = 40_000_000
 FORMATS_PHOTO = ("JPEG", "PNG", "WEBP")
 # Nom tiré du contenu : une nouvelle photo change d'URL, le cache peut être éternel.
 NOM_PHOTO = re.compile(r"[0-9a-f]{16}\.jpg")
+
+FORMATS_QR = {"svg": "image/svg+xml", "png": "image/png"}
 
 # Au-delà, Pillow lève DecompressionBombError au lieu d'un simple avertissement.
 Image.MAX_IMAGE_PIXELS = PIXELS_MAX
@@ -88,3 +91,17 @@ def servir_photo(session, config, nom: str):
     reponse = send_file(chemin, mimetype="image/jpeg", max_age=31536000)
     reponse.cache_control.immutable = True
     return reponse
+
+
+def url_version(config, slug: str, lang: str, src: str | None = None) -> str:
+    """Adresse publique d'une version, `?src=` en option (visites venues du papier)."""
+    prefixe = "/en" if lang == "en" else ""
+    return f"{config.URL_SITE}{prefixe}/{slug}" + (f"?src={src}" if src else "")
+
+
+def qr(url: str, format: str) -> bytes:
+    """QR code de `url`, en SVG ou en PNG (format dans FORMATS_QR)."""
+    sortie = BytesIO()
+    segno.make(url, error="m").save(sortie, kind=format, scale=8 if format == "svg" else 12,
+                                    border=4, light="#fff")
+    return sortie.getvalue()

@@ -1,6 +1,6 @@
 """Admin : édition du profil, du stock et des versions."""
 import flask_babel
-from flask import abort, current_app, g, redirect, render_template, request
+from flask import abort, current_app, g, make_response, redirect, render_template, request
 from sqlalchemy import select
 
 from cv.admin import bp
@@ -8,8 +8,8 @@ from cv.admin.formulaires import MAX_TEXTE, Champ, appliquer, lire, valeurs_de
 from cv.admin.stock import PAR_ELEMENT, TYPES, supprimer_element
 from cv.admin.versions import (CHAMPS_VERSION, composer, definir_par_defaut,
                                elements_du_stock, supprimer_version, verifier_version)
-from cv.medias import (PhotoInvalide, effacer_photo, enregistrer_photo, servir_photo,
-                       traiter_photo)
+from cv.medias import (FORMATS_QR, PhotoInvalide, effacer_photo, enregistrer_photo, qr,
+                       servir_photo, traiter_photo, url_version)
 from cv.models import Profil, Version
 from cv.vue import assembler_vue
 
@@ -181,8 +181,11 @@ def _page_version(version: Version | None, valeurs: dict, erreurs: dict,
                   statut: int = 200):
     """Page d'une version. `composition` : valeurs soumises à réafficher après une erreur."""
     lignes = elements_du_stock(g.db, version) if version else {}
+    config = current_app.config["CV"]
+    urls_qr = {lang: url_version(config, version.slug, lang, "qr")
+               for lang in ("fr", "en")} if version else {}
     return render_template(
-        "admin/version.html", version=version, champs_version=CHAMPS_VERSION,
+        "admin/version.html", version=version, champs_version=CHAMPS_VERSION, urls_qr=urls_qr,
         valeurs=valeurs, erreurs=erreurs, lignes=lignes, composition=composition,
         erreurs_composition=erreurs_composition or {}, titres={
             te: t.titre for te, t in PAR_ELEMENT.items()}), statut
@@ -235,6 +238,22 @@ def version_par_defaut(id_):
 def version_supprimer(id_):
     fait = supprimer_version(g.db, _version(id_))
     return ok("/admin/versions", "supprime" if fait else "defaut-protege")
+
+
+@bp.get("/versions/<int:id_>/qr.<fmt>")
+def version_qr(id_, fmt):
+    """QR code vers l'adresse publique, brouillon compris : on prépare l'impression."""
+    if fmt not in FORMATS_QR:
+        abort(404)
+    version = _version(id_)
+    lang = "en" if request.args.get("lang") == "en" else "fr"
+    reponse = make_response(qr(url_version(current_app.config["CV"], version.slug, lang, "qr"),
+                               fmt))
+    reponse.mimetype = FORMATS_QR[fmt]
+    if request.args.get("telecharger") == "1":
+        nom = f"qr-{version.slug}{'-en' if lang == 'en' else ''}.{fmt}"
+        reponse.headers["Content-Disposition"] = f'attachment; filename="{nom}"'
+    return reponse
 
 
 @bp.get("/versions/<int:id_>/apercu")

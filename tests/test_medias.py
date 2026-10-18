@@ -6,7 +6,9 @@ from io import BytesIO
 import pytest
 from PIL import Image, ImageCms
 
-from cv.medias import NOM_PHOTO, PhotoInvalide, enregistrer_photo, traiter_photo
+from cv.config import Config
+from cv.medias import (NOM_PHOTO, PhotoInvalide, enregistrer_photo, qr, traiter_photo,
+                       url_version)
 
 
 def _image(format="JPEG", taille=(400, 200), **options) -> bytes:
@@ -83,3 +85,18 @@ def test_nom_derive_du_contenu(tmp_path):
     assert NOM_PHOTO.fullmatch(nom) and (tmp_path / "photos" / nom).read_bytes() == b"x"
     assert enregistrer_photo(tmp_path / "photos", b"x") == nom
     assert [f.name for f in (tmp_path / "photos").iterdir()] == [nom]
+
+
+def test_url_version(monkeypatch):
+    monkeypatch.delenv("CV_URL_PUBLIQUE", raising=False)
+    assert url_version(Config(), "devops", "fr", "qr") == "https://cv.nanodeus.com/devops?src=qr"
+    monkeypatch.setenv("CV_URL_PUBLIQUE", "https://exemple.test")
+    assert url_version(Config(), "lead-tech", "en") == "https://exemple.test/en/lead-tech"
+
+
+def test_qr_svg_et_png():
+    svg = qr("https://cv.nanodeus.com/devops?src=qr", "svg")
+    assert svg.lstrip().startswith(b"<?xml") and b"<svg" in svg and b"<script" not in svg
+    # Fond blanc dans le fichier : transparent, il disparaîtrait sur un fond sombre.
+    assert b'fill="#fff"' in svg
+    assert qr("https://cv.nanodeus.com/devops?src=qr", "png").startswith(b"\x89PNG")
