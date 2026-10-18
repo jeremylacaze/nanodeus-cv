@@ -1,11 +1,13 @@
 """Socle : pragmas SQLite, contraintes du schéma, alignement des migrations."""
+from datetime import date, datetime
+
 import alembic.command
 import alembic.config
 import pytest
 from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
 
-from cv.models import Version, VersionElement
+from cv.models import DemandeContact, SelJournalier, Version, VersionElement, Visite
 
 
 def test_wal_et_cles_etrangeres_actifs(session):
@@ -48,6 +50,30 @@ def test_motif_de_slug_partage():
     from cv import langue, public
     from cv.models import SLUG
     assert SLUG in public._SLUG.pattern and SLUG in langue._CHEMIN_DE_PAGE.pattern
+
+
+def test_statut_de_demande_controle(session):
+    session.add(DemandeContact(cree_le=datetime(2026, 10, 18), email="r@ex.fr", message="m",
+                               version_slug="devops", langue="fr", statut="perdue",
+                               empreinte="0" * 32))
+    with pytest.raises(IntegrityError):
+        session.flush()
+
+
+def test_type_de_visite_controle(session):
+    session.add(Visite(horodatage=datetime(2026, 10, 18), type="clic", version_slug="devops",
+                       langue="fr", source="direct", appareil="mobile", empreinte="0" * 32))
+    with pytest.raises(IntegrityError):
+        session.flush()
+
+
+def test_un_seul_sel_par_jour(session):
+    session.add(SelJournalier(jour=date(2026, 10, 18), valeur=b"a" * 32))
+    session.flush()
+    session.expunge_all()
+    session.add(SelJournalier(jour=date(2026, 10, 18), valeur=b"b" * 32))
+    with pytest.raises(IntegrityError):
+        session.flush()
 
 
 def test_supprimer_version_supprime_ses_elements(session):

@@ -4,10 +4,10 @@ Chaque texte traduisible existe en paire `_fr` / `_en` ; `_en` peut rester vide,
 l'affichage retombe alors sur le français (cv/vue.py). Les listes (missions,
 centres d'intérêt) sont stockées une valeur par ligne.
 """
-from datetime import date
+from datetime import date, datetime
 
-from sqlalchemy import (Boolean, CheckConstraint, Date, ForeignKey, Index, Integer,
-                        String, Text, UniqueConstraint, text)
+from sqlalchemy import (Boolean, CheckConstraint, Date, DateTime, ForeignKey, Index, Integer,
+                        LargeBinary, String, Text, UniqueConstraint, text)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from cv.db import Base
@@ -16,6 +16,8 @@ TYPES_ENTREE = ("poste", "formation", "projet")
 VOIES = ("principale", "parallele")
 STATUTS = ("brouillon", "publiee", "non_listee")
 TYPES_ELEMENT = ("entree", "soft_skill", "competence", "chiffre")
+STATUTS_DEMANDE = ("en_attente", "envoyee", "echec")
+TYPES_VISITE = ("page", "contact", "pdf", "apercu_linkedin")
 # Seule définition du slug d'une version (/<slug>) : routes, lien d'autre langue, base.
 SLUG = r"[a-z0-9-]{1,40}"
 
@@ -142,3 +144,48 @@ class VersionElement(Base):
     ordre: Mapped[int] = mapped_column(Integer, default=0)
     missions_fr: Mapped[str | None] = mapped_column(Text)
     missions_en: Mapped[str | None] = mapped_column(Text)
+
+
+class DemandeContact(Base):
+    """Demande « Demander l'accès », enregistrée avant tout envoi.
+
+    `empreinte` : HMAC de l'IP avec le sel du jour (cv/journal.py), jamais l'IP.
+    `erreur` : détail technique d'un échec d'envoi, visible dans l'admin seulement."""
+    __tablename__ = "demande_contact"
+    __table_args__ = (_dans("statut", STATUTS_DEMANDE),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    cree_le: Mapped[datetime] = mapped_column(DateTime, index=True)
+    email: Mapped[str] = mapped_column(String(254))
+    nom: Mapped[str] = mapped_column(String(100), default="")
+    entreprise: Mapped[str] = mapped_column(String(100), default="")
+    message: Mapped[str] = mapped_column(Text)
+    version_slug: Mapped[str] = mapped_column(String(40))
+    langue: Mapped[str] = mapped_column(String(2))
+    statut: Mapped[str] = mapped_column(String(20), default="en_attente")
+    erreur: Mapped[str | None] = mapped_column(String(300))
+    envoyee_le: Mapped[datetime | None] = mapped_column(DateTime)
+    empreinte: Mapped[str] = mapped_column(String(32), index=True)
+
+
+class Visite(Base):
+    """Une page vue (ou un événement) du site public, sans IP ni cookie."""
+    __tablename__ = "visite"
+    __table_args__ = (_dans("type", TYPES_VISITE),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    horodatage: Mapped[datetime] = mapped_column(DateTime, index=True)
+    type: Mapped[str] = mapped_column(String(20))
+    version_slug: Mapped[str] = mapped_column(String(40))
+    langue: Mapped[str] = mapped_column(String(2))
+    source: Mapped[str] = mapped_column(String(100))
+    appareil: Mapped[str] = mapped_column(String(12))
+    empreinte: Mapped[str] = mapped_column(String(32))
+
+
+class SelJournalier(Base):
+    """Sel aléatoire des empreintes, un par jour (UTC) ; celui de la veille est jeté."""
+    __tablename__ = "sel_journalier"
+
+    jour: Mapped[date] = mapped_column(Date, primary_key=True)
+    valeur: Mapped[bytes] = mapped_column(LargeBinary(32))
