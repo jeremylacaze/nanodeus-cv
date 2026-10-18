@@ -1,0 +1,4 @@
+# Dépendances de développement et de test uniquement — jamais dans l'image.
+-r requirements.txt
+pytest==9.1.1
+ruff==0.16.10

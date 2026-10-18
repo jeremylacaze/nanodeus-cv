@@ -1,0 +1,11 @@
+# Analyse statique : règles qui trouvent des bugs, pas du style (comme ReadLN).
+target-version = "py312"
+extend-exclude = ["data"]
+
+[lint]
+select = [
+    "F",   # pyflakes : nom indéfini, import ou variable inutilisés
+    "E9",  # erreurs de syntaxe
+    "B",   # bugbear : argument par défaut mutable, `assert False`…
+]
+ignore = ["B904"]
