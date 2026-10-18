@@ -1,0 +1,90 @@
+/* Admin du CV : mêmes couleurs que le site public, mise en page de travail.
+   Aucun style en ligne : la CSP n'autorise que les feuilles servies (style-src 'self'). */
+:root {
+  --fond: #0d1117; --carte: #161b22; --carte-2: #21262d;
+  --bord: #30363d; --texte: #e6edf3; --muted: #8b949e;
+  --ok: #3fb950; --run: #d29922; --sel: #58a6ff; --btn: #238636; --btn-texte: #ffffff;
+  --erreur: #f85149;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --fond: #ffffff; --carte: #f6f8fa; --carte-2: #eaeef2;
+    --bord: #d0d7de; --texte: #1f2328; --muted: #59636e;
+    --ok: #1a7f37; --run: #9a6700; --sel: #0969da; --btn: #1f883d; --erreur: #cf222e;
+    color-scheme: light;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--fond); color: var(--texte); font: 14px/1.5 var(--sans); }
+a { color: var(--sel); }
+h1 { font-size: 20px; margin: 0 0 16px; }
+h2 { font-size: 16px; margin: 24px 0 8px; }
+.page { max-width: 1120px; margin: 0 auto; padding: 16px 16px 48px; }
+.muted { color: var(--muted); }
+
+.entete {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
+  padding: 10px 16px; background: var(--carte); border-bottom: 1px solid var(--bord);
+}
+.marque { font: 600 14px var(--mono); color: var(--texte); text-decoration: none; }
+.nav { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.nav a { text-decoration: none; }
+
+.message {
+  margin: 0 0 16px; padding: 8px 12px; border: 1px solid var(--ok); border-radius: 6px;
+  background: var(--carte);
+}
+.alerte { border-color: var(--erreur); }
+.compteurs { list-style: none; padding: 0; display: grid; gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.compteurs a { display: block; padding: 12px; border: 1px solid var(--bord); border-radius: 6px;
+  background: var(--carte); text-decoration: none; color: var(--texte); }
+.compteurs strong { font: 600 20px var(--mono); color: var(--sel); margin-right: 4px; }
+
+/* Formulaires */
+.champ { display: grid; gap: 4px; margin-bottom: 12px; max-width: 720px; }
+.champ label { font-weight: 600; }
+.champ--case { display: flex; align-items: center; gap: 8px; }
+.aide { color: var(--muted); font-size: 12px; }
+.erreur-champ { color: var(--erreur); font-size: 12px; }
+input[type=text], input[type=date], input[type=url], input[type=number], select, textarea {
+  width: 100%; padding: 6px 8px; font: inherit; color: var(--texte);
+  background: var(--fond); border: 1px solid var(--bord); border-radius: 6px;
+}
+input[type=number] { width: 5em; }
+textarea { min-height: 6em; resize: vertical; }
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible {
+  outline: 2px solid var(--sel); outline-offset: 1px;
+}
+[aria-invalid=true] { border-color: var(--erreur); }
+button {
+  font: 600 13px var(--sans); padding: 6px 14px; border-radius: 6px; cursor: pointer;
+  color: var(--btn-texte); background: var(--btn); border: 1px solid var(--btn);
+}
+button.secondaire { color: var(--texte); background: var(--carte-2); border-color: var(--bord); }
+button.danger { color: var(--erreur); background: var(--carte-2); border-color: var(--erreur); }
+button:disabled { opacity: .6; cursor: default; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
+.actions form { margin: 0; }
+fieldset { border: 1px solid var(--bord); border-radius: 6px; margin: 0 0 16px; padding: 8px 12px; }
+legend { font-weight: 600; padding: 0 4px; }
+
+/* Tableaux : défilent dans leur cadre, jamais la page */
+.cadre { overflow-x: auto; border: 1px solid var(--bord); border-radius: 6px; margin-bottom: 16px; }
+table { border-collapse: collapse; width: 100%; }
+th, td { text-align: left; vertical-align: top; padding: 6px 10px; border-bottom: 1px solid var(--bord); }
+th { background: var(--carte); font-weight: 600; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+.texte-long { white-space: pre-wrap; overflow-wrap: anywhere; min-width: 16em; }
+.badge { display: inline-block; font: 600 11px var(--mono); padding: 1px 6px; border-radius: 10px;
+  border: 1px solid var(--bord); color: var(--muted); }
+.badge--ok { color: var(--ok); border-color: var(--ok); }
+.badge--run { color: var(--run); border-color: var(--run); }
+.badge--erreur { color: var(--erreur); border-color: var(--erreur); }
+.filtres { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: end; margin-bottom: 16px; }
+.filtres .champ { margin: 0; min-width: 140px; flex: 1 1 140px; }

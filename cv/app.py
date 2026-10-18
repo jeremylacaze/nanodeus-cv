@@ -1,12 +1,12 @@
 """Fabrique de l'application.
 
 Une seule image, deux rôles : `public` (derrière Traefik) n'enregistre aucune
-route d'admin ; `admin` (tailnet uniquement) viendra au plan 3.
+route d'admin ; `admin` (tailnet uniquement) n'enregistre que l'admin, sous /admin.
 """
 from pathlib import Path
 
 import click
-from flask import Flask, g, render_template
+from flask import Flask, g, redirect, render_template
 from flask_babel import Babel
 from flask_babel import gettext as _
 
@@ -45,6 +45,11 @@ def create_app(config: Config | None = None) -> Flask:
     Babel(app, locale_selector=locale_selector)
     init_langue(app)
     init_securite(app)
+    if config.ROLE == "admin":
+        from cv.admin.acces import init_acces
+        init_acces(app)
+        # Le profil et le stock tiennent en quelques dizaines de Kio.
+        app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024
 
     @app.before_request
     def _ouvrir_session():
@@ -88,4 +93,8 @@ def create_app(config: Config | None = None) -> Flask:
     if config.ROLE == "public":
         from cv.public import bp
         app.register_blueprint(bp)
+    else:
+        from cv.admin import bp
+        app.register_blueprint(bp)
+        app.add_url_rule("/", "racine_admin", lambda: redirect("/admin/"))
     return app

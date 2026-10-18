@@ -1,0 +1,10 @@
+{% extends "admin/base.html" %}
+{% block titre %}Accueil{% endblock %}
+{% block contenu %}
+  <h1>Accueil</h1>
+  <ul class="compteurs">
+    <li><a href="/admin/demandes"><strong>{{ demandes }}</strong> demande(s) non envoyée(s)</a></li>
+    <li><a href="/admin/visites"><strong>{{ visites }}</strong> visite(s) sur 7 jours</a></li>
+    <li><a href="/admin/stock/soft-skills"><strong>{{ a_completer }}</strong> soft skill(s) à compléter</a></li>
+  </ul>
+{% endblock %}
