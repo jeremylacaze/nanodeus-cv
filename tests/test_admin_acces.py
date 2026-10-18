@@ -73,3 +73,31 @@ def test_message_ok_connu_seulement(admin):
 
 def test_corps_jusqu_a_un_mio(admin):
     assert admin.application.config["MAX_CONTENT_LENGTH"] == 1024 * 1024
+
+
+@pytest.mark.parametrize("hote, attendu", [
+    ("localhost", 200), ("localhost:5011", 200), ("127.0.0.1:5011", 200), ("[::1]:5011", 200),
+    ("LOCALHOST", 200), ("evil.example", 403), ("evil.example:5011", 403),
+    ("localhost.evil.example", 403)])
+def test_hote_controle_contre_le_dns_rebinding(admin, hote, attendu):
+    # Une page tierce dont le domaine pointe vers l'IP de l'admin enverrait son propre
+    # Host (et un Origin assorti) : seul un Host attendu ouvre l'admin.
+    r = admin.get("/admin/", headers={"Host": hote})
+    assert r.status_code == attendu and EMAIL.encode() not in r.data
+    origine = {"Host": hote, "Origin": f"http://{hote}"}
+    assert admin.post("/admin/profil", headers=origine, data={}).status_code in (
+        (400,) if attendu == 200 else (403,))
+
+
+def test_hotes_configures(fabrique_app, monkeypatch):
+    monkeypatch.setenv("CV_ADMIN_HOTES", "100.64.0.5, Admin.Exemple.ts.net")
+    client = fabrique_app(role="admin").test_client()
+    assert client.get("/admin/", headers={"Host": "admin.exemple.ts.net:5011"}).status_code == 200
+    assert client.get("/admin/", headers={"Host": "localhost"}).status_code == 403
+
+
+def test_hotes_vides_refuses(monkeypatch):
+    monkeypatch.setenv("CV_ROLE", "admin")
+    monkeypatch.setenv("CV_ADMIN_HOTES", " , ")
+    with pytest.raises(ValueError):
+        Config()

@@ -8,6 +8,7 @@ ROLES = ("public", "admin")
 MODES_TLS = ("starttls", "ssl", "aucun")
 # Tailscale (IPv4 CGNAT et IPv6 ULA du tailnet), plus le loopback pour ./dev.sh.
 RESEAUX_PAR_DEFAUT = "100.64.0.0/10,fd7a:115c:a1e0::/48,127.0.0.0/8,::1/128"
+HOTES_PAR_DEFAUT = "localhost,127.0.0.1,::1"
 
 
 def lire_reseaux(texte: str) -> tuple:
@@ -34,6 +35,12 @@ class Config:
         # Adresses sources admises par l'admin ; une chaîne vide coupe le contrôle.
         self.ADMIN_RESEAUX = lire_reseaux(os.environ.get("CV_ADMIN_RESEAUX",
                                                          RESEAUX_PAR_DEFAUT))
+        # Noms d'hôte admis par l'admin (sans port) : contre le DNS rebinding, une page
+        # tierce dont le domaine pointerait vers l'IP de l'admin.
+        self.ADMIN_HOTES = tuple(h.strip().lower() for h in os.environ.get(
+            "CV_ADMIN_HOTES", HOTES_PAR_DEFAUT).split(",") if h.strip())
+        if self.ROLE == "admin" and not self.ADMIN_HOTES:
+            raise ValueError("CV_ADMIN_HOTES vide : l'admin n'accepterait aucun hôte")
         # Adresse canonique (og:url) : sans elle, l'en-tête Host de la requête ferait foi.
         self.URL_PUBLIQUE = os.environ.get("CV_URL_PUBLIQUE", "").rstrip("/")
         if self.URL_PUBLIQUE and not re.fullmatch(r"https?://[^/\s]+", self.URL_PUBLIQUE):
