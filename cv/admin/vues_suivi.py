@@ -1,12 +1,12 @@
 """Admin : accueil, demandes de contact et visites."""
 from datetime import timedelta
 
-from flask import abort, current_app, g, render_template, request
+from flask import current_app, g, render_template, request
 from sqlalchemy import func, or_, select
 
 from cv.admin import bp
 from cv.admin.suivi import lire_filtres, totaux, valeurs_presentes, visites
-from cv.admin.vues_contenu import ok
+from cv.admin.vues_contenu import ok, trouver
 from cv.contact import envoyer_demande, message_de_test, renvoyable
 from cv.journal import maintenant_utc
 from cv.models import TYPES_VISITE, DemandeContact, SoftSkill, Visite
@@ -29,16 +29,16 @@ def accueil():
 
 
 def _demande(id_: int) -> DemandeContact:
-    return g.db.get(DemandeContact, id_) or abort(404)
+    return trouver(DemandeContact, id_)
 
 
-def _page_demandes(resultat_test: str | None = None, erreur_test: str | None = None):
+def _page_demandes(erreur_test: str | None = None):
     demandes = g.db.scalars(select(DemandeContact)
                             .order_by(DemandeContact.cree_le.desc(), DemandeContact.id.desc())).all()
     maintenant = maintenant_utc()
     return render_template("admin/demandes.html", demandes=demandes,
                            renvoyables={d.id for d in demandes if renvoyable(d, maintenant)},
-                           resultat_test=resultat_test, erreur_test=erreur_test)
+                           erreur_test=erreur_test)
 
 
 @bp.get("/demandes")
@@ -69,8 +69,9 @@ def demande_test():
         current_app.extensions["cv_envoi"].envoyer(
             message_de_test(current_app.config["CV"], maintenant_utc()))
     except Exception as exc:  # noqa: BLE001 — l'échec est affiché, c'est le but du test
+        # Rendu direct pour montrer l'erreur ; un rechargement ne renvoie qu'un échec.
         return _page_demandes(erreur_test=f"{exc.__class__.__name__}: {exc}"[:300])
-    return _page_demandes(resultat_test="Email de test envoyé.")
+    return ok("/admin/demandes", "test-envoye")
 
 
 LIMITE_VISITES = 200

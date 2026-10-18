@@ -33,7 +33,7 @@ def test_totaux(session):
     session.commit()
     t = totaux(session, _tout())
     assert t.uniques_par_jour == [(J, 2), (J - timedelta(days=1), 1)]
-    assert t.apercus_linkedin == 1 and t.total == 5
+    assert t.apercus_linkedin == 1 and t.total == 4
 
 
 def test_par_source_trie(session):
@@ -119,3 +119,20 @@ def test_page_visites(admin):
 
 def test_page_visites_filtres_invalides(admin):
     assert admin.get("/admin/visites?du=x&au=2026-99-99&type=zzz").status_code == 200
+
+
+@pytest.mark.parametrize("requete", ["au=9999-12-31", "du=9999-12-31", "du=0001-01-01"])
+def test_dates_extremes_sans_erreur(admin, requete):
+    # Le sélecteur de date laisse saisir l'an 9999 : au + 1 jour ne doit pas déborder.
+    assert admin.get(f"/admin/visites?{requete}").status_code == 200
+
+
+def test_apercus_hors_total_et_sources(session):
+    # Comme l'accueil : un aperçu LinkedIn a son propre compteur, il ne fait pas une visite.
+    _visite(session, _a(J), source="linkedin.com")
+    _visite(session, _a(J), source="linkedin.com", type="apercu_linkedin")
+    session.commit()
+    t = totaux(session, _tout())
+    assert (t.total, t.par_source, t.apercus_linkedin) == (1, [("linkedin.com", 1)], 1)
+    t = totaux(session, _tout(type="apercu_linkedin"))
+    assert (t.total, t.par_source) == (1, [("linkedin.com", 1)])

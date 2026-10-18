@@ -160,7 +160,8 @@ a.secret:hover, a.secret:focus-visible { border-color: var(--sel); }
   border: 0; border-radius: 6px; padding: 5px 12px; cursor: pointer;
 }
 .btn-contact:focus-visible { outline: 2px solid var(--sel); outline-offset: 2px; }
-a.btn-contact { display: inline-block; text-decoration: none; }
+a.btn-contact, span.btn-contact { display: inline-block; text-decoration: none; }
+.btn-contact.inactif { opacity: .6; cursor: not-allowed; }
 .btn-contact:disabled { opacity: .6; cursor: progress; }
 .btn-secondaire {
   font: 12px var(--sans); border: 1px solid var(--bord); border-radius: 6px;

@@ -133,3 +133,22 @@ def test_apercu_en_anglais(admin):
 def test_pas_de_bandeau_d_apercu_en_public(fabrique_app):
     corps = fabrique_app().test_client().get("/devops").get_data(as_text=True)
     assert "Aperçu —" not in corps and 'class="apercu"' not in corps
+
+
+def test_id_hors_64_bits_404(admin):
+    for url in (f"/admin/versions/{2**64}", f"/admin/versions/{2**64}/apercu"):
+        assert admin.get(url).status_code == 404
+
+
+def test_bandeau_d_apercu_selon_le_statut(admin):
+    corps = admin.get(f"/admin/versions/{_brouillon(admin)}/apercu").get_data(as_text=True)
+    assert "non visible tant qu'elle est en brouillon" in corps
+    corps = admin.get(f"/admin/versions/{_id(admin, 'devops')}/apercu").get_data(as_text=True)
+    assert "Aperçu — version « devops »" in corps and "brouillon" not in corps
+
+
+def test_apercu_sans_formulaire_de_contact(admin):
+    # Le rôle admin ne sert pas /<slug>/contact : le lien et la modale mèneraient à un 404.
+    corps = admin.get(f"/admin/versions/{_id(admin, 'devops')}/apercu").get_data(as_text=True)
+    assert "/devops/contact" not in corps and "<dialog" not in corps
+    assert "contact.js" not in corps and "Demander l'accès" in corps

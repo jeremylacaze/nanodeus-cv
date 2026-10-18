@@ -32,7 +32,8 @@ def _date(texte: str | None) -> date | None:
     if len(texte) != 10:
         return None
     try:
-        return date.fromisoformat(texte)
+        # Borné à la veille de date.max : le filtre calcule « au + 1 jour ».
+        return min(date.fromisoformat(texte), date.max - timedelta(days=1))
     except ValueError:
         return None
 
@@ -66,16 +67,18 @@ def visites(session, filtres: Filtres, limite: int = 200) -> list[Visite]:
 
 def totaux(session, filtres: Filtres) -> Totaux:
     conditions = _conditions(filtres)
-    total = session.scalar(select(func.count()).select_from(Visite).where(*conditions))
+    # Un aperçu LinkedIn est un robot : il a son propre compteur et ne fait ni une
+    # visite ni un visiteur, comme sur l'accueil — sauf si le filtre le demande.
+    humaines = conditions if filtres.type else [*conditions, Visite.type != "apercu_linkedin"]
+    total = session.scalar(select(func.count()).select_from(Visite).where(*humaines))
     jour = func.date(Visite.horodatage)
-    # Un aperçu LinkedIn est un robot : il ne fait pas un visiteur.
     uniques = session.execute(
         select(jour, func.count(distinct(Visite.empreinte)))
         .where(*conditions, Visite.type != "apercu_linkedin")
         .group_by(jour).order_by(jour.desc())).all()
     nombre = func.count().label("nombre")
     par_source = session.execute(
-        select(Visite.source, nombre).where(*conditions)
+        select(Visite.source, nombre).where(*humaines)
         .group_by(Visite.source).order_by(nombre.desc(), Visite.source)).all()
     apercus = session.scalar(select(func.count()).select_from(Visite)
                              .where(*conditions, Visite.type == "apercu_linkedin"))

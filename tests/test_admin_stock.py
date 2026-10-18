@@ -104,3 +104,8 @@ def test_contenu_echappe(admin):
     assert "&lt;script&gt;x" in corps and "<script>x" not in corps
     with _session(admin) as s:
         assert s.scalars(select(Competence).where(Competence.nom_fr == "<script>x")).one()
+
+
+def test_id_hors_64_bits_404(admin):
+    assert admin.get(f"/admin/stock/parcours/{2**64}").status_code == 404
+    assert admin.get(f"/admin/stock/parcours/{2**63}").status_code == 404

@@ -31,6 +31,17 @@ CHAMPS_PROFIL = (
 )
 
 
+# Plus grand entier de SQLite (signé sur 64 bits) : au-delà, la requête lèverait.
+ID_MAX = 2**63 - 1
+
+
+def trouver(modele, id_: int):
+    """Ligne désignée par l'URL, ou 404 (y compris pour un id que SQLite ne lit pas)."""
+    if id_ > ID_MAX:
+        abort(404)
+    return g.db.get(modele, id_) or abort(404)
+
+
 def ok(chemin: str, code: str = "enregistre"):
     """Redirection après écriture : le message est choisi par son code (MESSAGES)."""
     separateur = "&" if "?" in chemin else "?"
@@ -64,7 +75,7 @@ def _type_stock(cle: str):
 
 
 def _element(type_stock, id_: int):
-    return g.db.get(type_stock.modele, id_) or abort(404)
+    return trouver(type_stock.modele, id_)
 
 
 @bp.get("/stock/<cle>")
@@ -112,7 +123,7 @@ def stock_supprimer(cle, id_):
 
 
 def _version(id_: int) -> Version:
-    return g.db.get(Version, id_) or abort(404)
+    return trouver(Version, id_)
 
 
 @bp.get("/versions")
@@ -191,5 +202,6 @@ def version_apercu(id_):
     vue = assembler_vue(g.db, version.slug, g.lang, apercu=True)
     autre = "fr" if g.lang == "en" else "en"
     return render_template("cv.html", vue=vue, apercu=True, suggestion_en=False,
+                           brouillon=version.statut == "brouillon",
                            url_canonique="",
                            url_autre_langue=f"/admin/versions/{version.id}/apercu?lang={autre}")

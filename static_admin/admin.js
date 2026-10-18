@@ -19,3 +19,15 @@ document.addEventListener("submit", (evenement) => {
     }
   }, 0);
 });
+
+// Page restaurée par le retour arrière (cache d'historique) : les formulaires
+// gardaient leur état « envoyé » et leurs boutons désactivés.
+window.addEventListener("pageshow", (evenement) => {
+  if (!evenement.persisted) return;
+  for (const formulaire of document.querySelectorAll("form[data-envoye]")) {
+    delete formulaire.dataset.envoye;
+    for (const bouton of formulaire.querySelectorAll("button, input[type=submit]")) {
+      bouton.disabled = false;
+    }
+  }
+});

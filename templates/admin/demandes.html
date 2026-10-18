@@ -2,7 +2,6 @@
 {% block titre %}Demandes{% endblock %}
 {% block contenu %}
   <h1>Demandes de contact</h1>
-  {% if resultat_test %}<p class="message" role="status">{{ resultat_test }}</p>{% endif %}
   {% if erreur_test %}<p class="message alerte" role="alert">L'email de test n'est pas parti : {{ erreur_test }}</p>{% endif %}
   <form method="post" action="/admin/demandes/test">
     <div class="actions"><button type="submit" class="secondaire">Envoyer un email de test</button></div>

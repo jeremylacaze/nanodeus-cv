@@ -23,6 +23,7 @@ MESSAGES = {
     "renvoyee": "Demande envoyée.",
     "echec-envoi": "L'envoi a encore échoué : voir l'erreur dans la liste.",
     "deja-envoyee": "Cette demande est déjà envoyée ou en cours d'envoi.",
+    "test-envoye": "Email de test envoyé.",
 }
 
 

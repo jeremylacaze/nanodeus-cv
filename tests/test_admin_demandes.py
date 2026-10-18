@@ -87,7 +87,9 @@ def test_demande_inconnue_404(admin_et_envoi):
 def test_email_de_test(admin_et_envoi):
     c, envoi = admin_et_envoi
     r = c.post("/admin/demandes/test", headers=ORIGINE)
-    assert r.status_code == 200 and "Email de test envoyé." in r.get_data(as_text=True)
+    # Redirection : recharger la page qui suit ne renvoie pas un second email.
+    assert r.status_code == 303 and r.headers["Location"].endswith("?ok=test-envoye")
+    assert "Email de test envoyé." in c.get(r.headers["Location"]).get_data(as_text=True)
     assert envoi.messages[0]["Subject"] == "[CV] Email de test"
     envoi.erreur = OSError("refus")
     corps = c.post("/admin/demandes/test", headers=ORIGINE).get_data(as_text=True)
@@ -99,3 +101,9 @@ def test_email_de_test_non_configure(fabrique_app, monkeypatch):
     c = fabrique_app(role="admin").test_client()
     corps = c.post("/admin/demandes/test", headers=ORIGINE).get_data(as_text=True)
     assert "EnvoiNonConfigure" in corps
+
+
+def test_id_hors_64_bits_404(admin_et_envoi):
+    c, envoi = admin_et_envoi
+    r = c.post(f"/admin/demandes/{2**64}/renvoyer", headers=ORIGINE)
+    assert r.status_code == 404 and envoi.messages == []
