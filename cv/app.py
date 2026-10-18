@@ -14,6 +14,7 @@ from cv.amorcage import amorcer
 from cv.config import Config
 from cv.courriel import EnvoiSMTP
 from cv.db import creer_moteur, fabrique_sessions
+from cv.journal import maintenant_utc, purger
 from cv.langue import compiler_catalogues, init_langue, locale_selector
 from cv.securite import init_securite
 
@@ -103,6 +104,13 @@ def create_app(config: Config | None = None) -> Flask:
         """Pré-remplit une base vide avec le CV actuel."""
         with sessions() as s:
             click.echo("Base amorcée." if amorcer(s) else "Profil déjà présent : rien à faire.")
+
+    @app.cli.command("purger")
+    def _purger():
+        """Jette les sels passés et les visites de plus de 6 mois (timer quotidien)."""
+        with sessions() as s:
+            purger(s, maintenant_utc())
+        click.echo("Purge faite.")
 
     if config.ROLE == "public":
         from cv.public import bp
