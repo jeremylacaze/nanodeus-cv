@@ -8,9 +8,10 @@ from cv.admin.formulaires import MAX_TEXTE, Champ, appliquer, lire, valeurs_de
 from cv.admin.stock import PAR_ELEMENT, TYPES, supprimer_element
 from cv.admin.versions import (CHAMPS_VERSION, composer, definir_par_defaut,
                                elements_du_stock, supprimer_version, verifier_version)
-from cv.medias import (FORMATS_QR, PhotoInvalide, effacer_photo, enregistrer_photo, qr,
-                       servir_photo, traiter_photo, url_version)
+from cv.medias import (FORMATS_QR, PhotoInvalide, effacer_photo, enregistrer_photo,
+                       lire_photo, qr, servir_photo, traiter_photo, url_version)
 from cv.models import Profil, Version
+from cv.pdf import html_pdf, pdf_en_cache, rendre_pdf
 from cv.vue import assembler_vue
 
 ERREUR_PHOTO = ("Ce fichier n'est pas une photo lisible (JPEG, PNG ou WEBP, "
@@ -256,12 +257,40 @@ def version_qr(id_, fmt):
     return reponse
 
 
+def _langue_demandee() -> str:
+    g.lang = "en" if request.args.get("lang") == "en" else "fr"
+    flask_babel.refresh()  # la langue de Babel suit g.lang
+    return g.lang
+
+
+@bp.get("/versions/<int:id_>/cv.pdf")
+def version_pdf(id_):
+    """PDF public (brouillon compris), ou complet avec téléphone et email : celui-ci
+    n'est jamais écrit sur disque."""
+    version = _version(id_)
+    lang = _langue_demandee()
+    vue = assembler_vue(g.db, version.slug, lang, apercu=True)
+    config = current_app.config["CV"]
+    photo = lire_photo(g.db, config)
+    complet = request.args.get("complet") == "1"
+    if complet:
+        profil = g.db.get(Profil, 1) or Profil()
+        contenu = rendre_pdf(html_pdf(vue, config, photo,
+                                      (profil.telephone or "", profil.email or "")))
+    else:
+        contenu = pdf_en_cache(config.DOSSIER_CACHE_PDF, html_pdf(vue, config, photo))[0]
+    reponse = make_response(contenu)
+    reponse.mimetype = "application/pdf"
+    nom = f"cv-{version.slug}-{lang}{'-complet' if complet else ''}.pdf"
+    reponse.headers["Content-Disposition"] = f'attachment; filename="{nom}"'
+    return reponse
+
+
 @bp.get("/versions/<int:id_>/apercu")
 def version_apercu(id_):
     """La page publique telle qu'elle sera, brouillon compris. Rien n'est journalisé."""
     version = _version(id_)
-    g.lang = "en" if request.args.get("lang") == "en" else "fr"
-    flask_babel.refresh()  # la langue de Babel suit g.lang
+    _langue_demandee()
     vue = assembler_vue(g.db, version.slug, g.lang, apercu=True, prefixe_medias="/admin")
     autre = "fr" if g.lang == "en" else "en"
     return render_template("cv.html", vue=vue, apercu=True, suggestion_en=False,

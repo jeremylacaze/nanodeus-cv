@@ -10,8 +10,9 @@ from flask_babel import gettext as _
 from cv.contact import Formulaire, enregistrer, envoyer_demande, limite_atteinte, valider
 from cv.journal import empreinte, journaliser, maintenant_utc
 from cv.langue import suggerer_anglais
-from cv.medias import servir_photo
+from cv.medias import lire_photo, servir_photo
 from cv.models import SLUG, Version
+from cv.pdf import html_pdf, pdf_en_cache
 from cv.vue import assembler_vue, champ, version_publique
 
 bp = Blueprint("public", __name__)
@@ -41,6 +42,29 @@ def _page(slug: str | None):
 @bp.get("/en/")
 def accueil():
     return _page(None)
+
+
+@bp.get("/<slug>.pdf")
+@bp.get("/en/<slug>.pdf")
+def version_pdf(slug):
+    if not _SLUG.fullmatch(slug):
+        abort(404)
+    vue = assembler_vue(g.db, slug, g.lang)
+    if vue is None:
+        abort(404)
+    config = current_app.config["CV"]
+    contenu, etag = pdf_en_cache(config.DOSSIER_CACHE_PDF,
+                                 html_pdf(vue, config, lire_photo(g.db, config)))
+    reponse = make_response(contenu)
+    reponse.mimetype = "application/pdf"
+    reponse.set_etag(etag)
+    reponse.headers["Content-Disposition"] = f'inline; filename="cv-{vue.slug}-{g.lang}.pdf"'
+    # Toujours revalidé : l'ETag suit le contenu, un PDF périmé n'est jamais resservi.
+    reponse.headers["Cache-Control"] = "no-cache"
+    if vue.noindex:
+        reponse.headers["X-Robots-Tag"] = "noindex"
+    journaliser(g.db, request, config, "pdf", vue.slug, g.lang)
+    return reponse.make_conditional(request)
 
 
 @bp.get("/photo/<nom>")

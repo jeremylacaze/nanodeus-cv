@@ -8,6 +8,10 @@
   <div class="actions">
     <a href="/admin/versions/{{ version.id }}/apercu">Aperçu FR</a>
     <a href="/admin/versions/{{ version.id }}/apercu?lang=en">Aperçu EN</a>
+    <a href="/admin/versions/{{ version.id }}/cv.pdf">PDF public FR</a>
+    <a href="/admin/versions/{{ version.id }}/cv.pdf?lang=en">PDF public EN</a>
+    <a href="/admin/versions/{{ version.id }}/cv.pdf?complet=1">PDF complet FR</a>
+    <a href="/admin/versions/{{ version.id }}/cv.pdf?lang=en&amp;complet=1">PDF complet EN</a>
     {% if version.par_defaut %}<span class="badge badge--ok">par défaut</span>{% endif %}
   </div>
   <section id="qr" class="qr">

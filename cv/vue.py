@@ -58,6 +58,7 @@ class VueCV:
     localisation: str
     age: int | None
     ouvert: bool
+    permis: str  # PDF seulement : la page web ne l'affiche pas
     photo_url: str | None
     chiffres: list[tuple[str, str]]
     formations: list[Job]
@@ -153,7 +154,8 @@ def assembler_vue(session, slug: str | None, lang: str, aujourd_hui: date | None
         slug=version.slug, lang=lang, noindex=version.statut == "non_listee",
         nom=profil.nom_complet or "", titre=champ(version, "titre", lang),
         accroche=champ(version, "accroche", lang), localisation=profil.localisation or "",
-        age=age, ouvert=bool(profil.ouvert_opportunites), photo_url=(f"{prefixe_medias}/photo/{profil.photo_fichier}"
+        age=age, ouvert=bool(profil.ouvert_opportunites),
+        permis=(profil.permis or "").strip(), photo_url=(f"{prefixe_medias}/photo/{profil.photo_fichier}"
                                                   if profil.photo_fichier else None),
         chiffres=[(champ(c, "valeur", lang), champ(c, "libelle", lang))
                   for c, _ in charger(Chiffre, "chiffre")],

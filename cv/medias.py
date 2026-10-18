@@ -76,6 +76,13 @@ def chemin_photo(config, nom: str | None) -> Path | None:
     return chemin if chemin.is_file() else None
 
 
+def lire_photo(session, config) -> bytes | None:
+    """Contenu de la photo du profil, pour l'incorporer au PDF."""
+    profil = session.get(Profil, 1)
+    chemin = chemin_photo(config, profil.photo_fichier if profil else None)
+    return chemin.read_bytes() if chemin else None
+
+
 def effacer_photo(config, nom: str | None) -> None:
     chemin = chemin_photo(config, nom)
     if chemin is not None:
