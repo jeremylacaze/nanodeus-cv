@@ -83,7 +83,7 @@ def test_html_du_contenu_echappe(fabrique_app):
 def test_secrets_masques(client):
     html = _html(client)
     assert html.count("***") == 2 and 'data-action="demander-acces"' in html
-    assert 'class="btn-contact" data-action="demander-acces"' in html
+    assert 'class="btn-contact" href="/devops/contact" data-action="demander-acces"' in html
 
 
 def test_artefacts_absents_sans_liens(client):
@@ -138,3 +138,21 @@ def test_libelle_de_la_prochaine_mission_visible_sans_clic(client):
     html = _html(client, "/lead-tech")
     bouton = re.search(r'<button[^>]*data-cle="prochaine".*?</button>', html, re.S).group(0)
     assert "Lead tech" in bouton
+
+
+def test_bouton_contact_fonctionne_sans_js(client):
+    html = _html(client, "/lead-tech")
+    assert 'class="btn-contact" href="/lead-tech/contact" data-action="demander-acces"' in html
+    assert 'href="/en/lead-tech/contact"' in _html(client, "/en/lead-tech")
+
+
+def test_modale_presente_et_fermee(client):
+    html = _html(client)
+    assert re.search(r'<dialog[^>]*class="modale-contact"', html) and "<dialog open" not in html
+    assert 'action="/devops/contact"' in html and 'name="site_web"' in html
+    assert re.search(r'<script src="/static/contact\.js" nonce="[^"]+" defer>', html)
+    assert 'action="/en/devops/contact"' in _html(client, "/en/devops")
+
+
+def test_mention_de_confidentialite(client):
+    assert "aucun cookie" in _html(client) and "no cookies" in _html(client, "/en/devops")

@@ -5,7 +5,8 @@
     <h2 id="titre-secrets">{{ _("Secrets") }}</h2>
     <div class="secret mono"><span><span aria-hidden="true">🔒</span> PHONE <span class="muted">***</span></span><span class="muted">{{ _("masqué") }}</span></div>
     <div class="secret mono"><span><span aria-hidden="true">🔒</span> EMAIL <span class="muted">***</span></span>
-      <button type="button" class="btn-contact" data-action="demander-acces">{{ _("Demander l'accès") }}</button>
+      {#- Un lien : sans JavaScript, il mène à la page de contact ; contact.js ouvre la modale. #}
+      <a class="btn-contact" href="{{ '/en' if lang == 'en' else '' }}/{{ vue.slug }}/contact" data-action="demander-acces">{{ _("Demander l'accès") }}</a>
     </div>
   </section>
   {% if vue.linkedin_url or vue.github_url %}
@@ -17,3 +18,4 @@
   </section>
   {% endif %}
 </footer>
+<p class="confidentialite muted">{{ _("Ce site ne dépose aucun cookie. Chaque visite est notée sans votre adresse IP : date, page, source (LinkedIn, QR code…), type d'appareil et une empreinte anonyme renouvelée chaque jour. Ces visites sont effacées après 6 mois.") }}</p>
