@@ -3,34 +3,15 @@ import re
 
 import pytest
 
-from cv.amorcage import amorcer
-from cv.app import create_app
-from cv.config import Config
-from cv.db import Base
-from cv.models import Profil, Version
+from tests.conftest import EMAIL
 
 URLS = ["/", "/devops", "/lead-tech", "/en/", "/en/devops", "/en/lead-tech",
         "/inconnue", "/en/inconnue"]
-TELEPHONE, EMAIL = "+33 6 99 88 77 66", "fuite@test.invalid"
-
-
-def _app(tmp_path, monkeypatch, role="public"):
-    monkeypatch.setenv("CV_DATA_DIR", str(tmp_path))
-    monkeypatch.setenv("CV_ROLE", role)
-    app = create_app(Config())
-    Base.metadata.create_all(app.extensions["cv_moteur"])
-    with app.extensions["cv_sessions"]() as s:
-        amorcer(s)
-        profil = s.get(Profil, 1)
-        profil.telephone, profil.email = TELEPHONE, EMAIL
-        s.add(Version(slug="brouillon", statut="brouillon", titre_fr="Brouillon"))
-        s.commit()
-    return app
 
 
 @pytest.fixture
-def app(tmp_path, monkeypatch):
-    app = _app(tmp_path, monkeypatch)
+def app(fabrique_app):
+    app = fabrique_app()
     app.testing = True
     return app
 
@@ -41,8 +22,8 @@ def client(app):
 
 
 @pytest.fixture
-def client_qui_plante(tmp_path, monkeypatch):
-    app = _app(tmp_path, monkeypatch)
+def client_qui_plante(fabrique_app):
+    app = fabrique_app()
 
     def plante():
         raise RuntimeError(f"secret {EMAIL}")
@@ -163,6 +144,16 @@ def test_pas_de_route_admin(client, app):
     assert not [r.rule for r in app.url_map.iter_rules() if "admin" in r.rule]
 
 
-def test_role_admin_sans_blueprint_public(tmp_path, monkeypatch):
-    app = _app(tmp_path, monkeypatch, role="admin")
+def test_role_admin_sans_blueprint_public(fabrique_app):
+    app = fabrique_app(role="admin")
     assert "public" not in app.blueprints
+
+
+@pytest.mark.parametrize("url", ["/en//evil.example", "/en/\\evil.example",
+                                 "/en/%2F%2Fevil.example"])
+def test_lien_autre_langue_reste_sur_le_site(client, url):
+    # Werkzeug fusionne d'abord les doubles barres (redirection sur le même hôte).
+    corps = client.get(url, follow_redirects=True).get_data(as_text=True)
+    liens = re.findall(r'href="([^"]*)"', corps)
+    assert liens and all(lien.startswith("/") and not lien.startswith(("//", "/\\"))
+                         for lien in liens)

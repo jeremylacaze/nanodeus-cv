@@ -13,10 +13,13 @@ def langue_du_chemin(chemin: str) -> str:
 
 
 def url_autre_langue(chemin: str) -> str:
-    """Même page dans l'autre langue : /devops ↔ /en/devops, / ↔ /en/."""
-    if langue_du_chemin(chemin) == "en":
-        return chemin[3:] or "/"
-    return "/en" + chemin
+    """Même page dans l'autre langue : /devops ↔ /en/devops, / ↔ /en/.
+
+    Une seule barre en tête : sur une 404 comme /en//ailleurs.example, le lien ne
+    doit pas devenir //ailleurs.example (adresse d'un autre site)."""
+    anglais = langue_du_chemin(chemin) == "en"
+    cible = "/" + (chemin[3:] if anglais else chemin).lstrip("/\\")
+    return cible if anglais else "/en" + cible
 
 
 def locale_selector() -> str:
