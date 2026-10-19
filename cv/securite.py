@@ -50,6 +50,9 @@ def init_securite(app):
         reponse.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         reponse.headers["X-Frame-Options"] = "DENY"
         reponse.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        if public and request.is_secure:
+            # Un an, sans includeSubDomains ni preload : rien d'irréversible pour le domaine.
+            reponse.headers["Strict-Transport-Security"] = "max-age=31536000"
         if public:
             # Filet : le site public ne pose jamais de cookie (pas de bandeau à afficher).
             del reponse.headers["Set-Cookie"]

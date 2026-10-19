@@ -6,6 +6,7 @@ from flask import (Blueprint, abort, current_app, g, jsonify, make_response, red
 
 from cv.app import veut_json
 from flask_babel import gettext as _
+from sqlalchemy import select
 
 from cv.contact import Formulaire, enregistrer, envoyer_demande, limite_atteinte, valider
 from cv.journal import empreinte, journaliser, maintenant_utc
@@ -19,13 +20,17 @@ bp = Blueprint("public", __name__)
 _SLUG = re.compile(SLUG)
 
 
+def _racine() -> str:
+    return current_app.config["CV"].URL_PUBLIQUE or request.host_url.rstrip("/")
+
+
 def _page(slug: str | None):
     if slug is not None and not _SLUG.fullmatch(slug):
         abort(404)
     vue = assembler_vue(g.db, slug, g.lang, config=current_app.config["CV"])
     if vue is None:
         abort(404)
-    racine = current_app.config["CV"].URL_PUBLIQUE or request.host_url.rstrip("/")
+    racine = _racine()
     reponse = make_response(render_template(
         "cv.html", vue=vue, suggestion_en=suggerer_anglais(request),
         url_canonique=racine + request.path,
@@ -43,6 +48,25 @@ def _page(slug: str | None):
 @bp.get("/en/")
 def accueil():
     return _page(None)
+
+
+@bp.get("/robots.txt")
+def robots():
+    reponse = make_response(f"User-agent: *\nDisallow:\n\nSitemap: {_racine()}/sitemap.xml\n")
+    reponse.mimetype = "text/plain"
+    return reponse
+
+
+@bp.get("/sitemap.xml")
+def sitemap():
+    """Pages à indexer : / et chaque version publiée, sauf celle par défaut (servie
+    sur /). Une version non listée porte noindex : elle n'a rien à faire ici."""
+    slugs = g.db.scalars(select(Version.slug).where(
+        Version.statut == "publiee", Version.par_defaut.is_(False)).order_by(Version.slug))
+    reponse = make_response(render_template(
+        "sitemap.xml", racine=_racine(), chemins=["/", *(f"/{slug}" for slug in slugs)]))
+    reponse.mimetype = "application/xml"
+    return reponse
 
 
 @bp.get("/<slug>.pdf")

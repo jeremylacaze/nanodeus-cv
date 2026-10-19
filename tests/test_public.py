@@ -235,3 +235,20 @@ def test_sante_public(client, app):
 
 def test_sante_absente_en_admin(admin):
     assert admin.get("/sante").status_code == 404
+
+
+def test_hsts_en_https(client):
+    r = client.get("/", base_url="https://localhost")
+    assert r.headers["Strict-Transport-Security"] == "max-age=31536000"
+
+
+def test_pas_de_hsts_en_http(client):
+    # Un navigateur ignore HSTS reçu en clair : l'envoyer n'apprendrait rien de juste.
+    assert "Strict-Transport-Security" not in client.get("/").headers
+
+
+def test_pas_de_hsts_sur_l_admin(admin):
+    # L'admin est servie en HTTP sur le tailnet : HSTS la rendrait injoignable.
+    r = admin.get("/admin/", base_url="https://localhost")
+    assert r.status_code == 200
+    assert "Strict-Transport-Security" not in r.headers
