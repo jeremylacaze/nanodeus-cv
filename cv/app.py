@@ -6,9 +6,11 @@ route d'admin ; `admin` (tailnet uniquement) n'enregistre que l'admin, sous /adm
 from pathlib import Path
 
 import click
-from flask import Flask, g, jsonify, make_response, redirect, render_template, request
+from flask import (Flask, Response, g, jsonify, make_response, redirect, render_template,
+                   request)
 from flask_babel import Babel
 from flask_babel import gettext as _
+from sqlalchemy import text
 
 from cv.amorcage import amorcer
 from cv.config import Config
@@ -39,6 +41,12 @@ def _erreur(statut: int, message: str, page):
 
 def _page_erreur(titre: str, message: str):
     return lambda: render_template("erreur.html", titre=titre, message=message)
+
+
+def _sante():
+    """Sonde de Traefik et du healthcheck Docker : la base répond. Rien n'est journalisé."""
+    g.db.execute(text("SELECT 1"))
+    return Response("ok", mimetype="text/plain")
 
 
 def create_app(config: Config | None = None) -> Flask:
@@ -115,6 +123,7 @@ def create_app(config: Config | None = None) -> Flask:
     if config.ROLE == "public":
         from cv.public import bp
         app.register_blueprint(bp)
+        app.add_url_rule("/sante", "sante", _sante)
     else:
         from cv.admin import bp
         app.register_blueprint(bp)

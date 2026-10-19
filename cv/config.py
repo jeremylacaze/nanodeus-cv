@@ -10,6 +10,7 @@ MODES_TLS = ("starttls", "ssl", "aucun")
 RESEAUX_PAR_DEFAUT = "100.64.0.0/10,fd7a:115c:a1e0::/48,127.0.0.0/8,::1/128"
 HOTES_PAR_DEFAUT = "localhost,127.0.0.1,::1"
 URL_PAR_DEFAUT = "https://cv.nanodeus.com"
+SECRET_DE_DEV = "dev-uniquement"
 
 
 def lire_reseaux(texte: str) -> tuple:
@@ -28,9 +29,11 @@ class Config:
         self.ROLE = os.environ.get("CV_ROLE", "public")
         if self.ROLE not in ROLES:
             raise ValueError(f"CV_ROLE inconnu : {self.ROLE!r}")
-        self.SECRET_KEY = os.environ.get("SECRET_KEY", "dev-uniquement")
+        # CV_PROD=1 sur le serveur : les valeurs de développement y sont refusées.
+        self.PROD = os.environ.get("CV_PROD") == "1"
+        self.SECRET_KEY = os.environ.get("SECRET_KEY", SECRET_DE_DEV)
         # Secret serveur combiné au sel du jour pour les empreintes (cv/journal.py).
-        self.SEL_HMAC = os.environ.get("CV_SEL_HMAC", "dev-uniquement")
+        self.SEL_HMAC = os.environ.get("CV_SEL_HMAC", SECRET_DE_DEV)
         self.TRUST_PROXY = os.environ.get("TRUST_PROXY", "0") == "1"
         if self.ROLE == "admin" and self.TRUST_PROXY:
             # Sans proxy devant l'admin, un X-Forwarded-For forgé contournerait le
@@ -66,6 +69,18 @@ class Config:
         self.EMAIL_EXPEDITEUR = os.environ.get("CV_EMAIL_EXPEDITEUR", "cv@nanodeus.com")
         # Boîte perso de Jeremy : posée sur le serveur seulement, jamais dans le dépôt.
         self.EMAIL_DESTINATAIRE = os.environ.get("CV_EMAIL_DESTINATAIRE", "")
+        if self.PROD:
+            self._verifier_production()
+
+    def _verifier_production(self) -> None:
+        """Un secret de dev en ligne rendrait les empreintes du journal recalculables
+        par quiconque lit le dépôt public."""
+        for variable, valeur in (("SECRET_KEY", self.SECRET_KEY),
+                                 ("CV_SEL_HMAC", self.SEL_HMAC)):
+            if not valeur or valeur == SECRET_DE_DEV:
+                raise ValueError(f"CV_PROD=1 : {variable} doit être un vrai secret")
+        if not self.URL_PUBLIQUE:
+            raise ValueError("CV_PROD=1 : CV_URL_PUBLIQUE est obligatoire")
 
     @property
     def URL_SITE(self) -> str:
