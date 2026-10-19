@@ -6,6 +6,8 @@ téléphone et l'email : il n'est jamais écrit sur disque.
 import base64
 import hashlib
 import os
+import re
+import unicodedata
 from pathlib import Path
 
 from flask import render_template
@@ -36,6 +38,15 @@ def html_pdf(vue, config, photo: bytes | None,
         qr_uri=_data_uri("image/svg+xml", qr(url_version(config, vue.slug, vue.lang, "qr"),
                                              "svg")),
         lien=lien, adresse=url_version(config, vue.slug, vue.lang).split("://", 1)[-1])
+
+
+def nom_fichier(vue, complet: bool = False) -> str:
+    """cv-<prénom-nom>-<slug>-<lang>[-complet].pdf, en ASCII : l'en-tête
+    Content-Disposition n'admet pas d'accents sans encodage."""
+    ascii_ = unicodedata.normalize("NFKD", vue.nom).encode("ascii", "ignore").decode()
+    nom = re.sub(r"[^a-z0-9]+", "-", ascii_.lower()).strip("-")
+    morceaux = ["cv", nom, vue.slug, vue.lang] + (["complet"] if complet else [])
+    return "-".join(m for m in morceaux if m) + ".pdf"
 
 
 def rendre_pdf(html: str) -> bytes:

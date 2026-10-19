@@ -12,7 +12,7 @@ from cv.admin.versions import (CHAMPS_VERSION, composer, definir_par_defaut,
 from cv.medias import (FORMATS_QR, PhotoInvalide, effacer_photo, enregistrer_photo,
                        lire_photo, qr, servir_photo, traiter_photo, url_version)
 from cv.models import Profil, Version
-from cv.pdf import html_pdf, pdf_en_cache, rendre_pdf, vider_cache
+from cv.pdf import html_pdf, nom_fichier, pdf_en_cache, rendre_pdf, vider_cache
 from cv.vue import assembler_vue
 
 ERREUR_PHOTO = ("Ce fichier n'est pas une photo lisible (JPEG, PNG ou WEBP, "
@@ -294,8 +294,7 @@ def version_pdf(id_):
         contenu = pdf_en_cache(config.DOSSIER_CACHE_PDF, html_pdf(vue, config, photo))[0]
     reponse = make_response(contenu)
     reponse.mimetype = "application/pdf"
-    nom = f"cv-{version.slug}-{lang}{'-complet' if complet else ''}.pdf"
-    reponse.headers["Content-Disposition"] = f'attachment; filename="{nom}"'
+    reponse.headers["Content-Disposition"] = f'attachment; filename="{nom_fichier(vue, complet)}"'
     return reponse
 
 
