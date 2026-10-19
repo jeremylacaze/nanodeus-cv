@@ -91,6 +91,7 @@ code="$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:18780/admin/" |
 
 [ "$(dc exec -T public id -u)" = 1000 ] || echec "public ne tourne pas en UID 1000"
 # $HOME appartient à l'UID 1000 : seule la lecture seule peut y refuser l'écriture.
+# shellcheck disable=SC2016 # $HOME se développe dans le conteneur, pas ici.
 if dc exec -T public sh -c 'touch "$HOME/essai"' 2>/dev/null; then
     echec "système de fichiers inscriptible"
 fi
