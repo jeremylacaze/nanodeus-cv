@@ -49,9 +49,20 @@ La liste complète des variables, commentée, est dans `deploy/env.exemple`. La 
 Côté DNS netcup, créer un enregistrement `cv` (A, et AAAA si le serveur a une IPv6)
 qui pointe vers le serveur.
 
+Deux réglages du serveur, à faire une fois avec le compte d'administration :
+
+- `net.ipv4.ip_nonlocal_bind=1` (dans `/etc/sysctl.d/`) : au démarrage, Docker publie
+  le port de l'admin avant que `tailscale0` ait son adresse.
+- `sudo tailscale set --snat-subnet-routes=false` : sans lui, Tailscale masque la source
+  de tout paquet du tailnet retransmis vers un conteneur. L'admin verrait alors la
+  passerelle Docker (172.x) au lieu d'une adresse 100.x, et répondrait 403. Ce
+  masquage ne sert qu'à un serveur qui annonce des routes ou sert de nœud de sortie ;
+  le réglage est persistant.
+
 **Contrôle :**
-- `ls -l /opt/nanodeus-cv` montre `.env` en `-rw-------`, avec `deploy` pour
+- `ls -la /opt/nanodeus-cv` montre `.env` en `-rw-------`, avec `deploy` pour
   propriétaire ;
+- `sudo iptables -t nat -S ts-postrouting` ne contient aucune règle `MASQUERADE` ;
 - `docker network ls` liste `proxy` ;
 - `dig +short cv.nanodeus.com` renvoie l'IP du serveur.
 
