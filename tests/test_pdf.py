@@ -2,6 +2,7 @@
 import re
 import socket
 from io import BytesIO
+from types import SimpleNamespace
 
 import pytest
 from pypdf import PdfReader
@@ -48,7 +49,7 @@ def _id(app, slug):
 def test_pdf_public(client):
     r = client.get("/devops.pdf")
     assert r.status_code == 200 and r.mimetype == "application/pdf"
-    assert r.headers["Content-Disposition"] == 'inline; filename="cv-devops-fr.pdf"'
+    assert r.headers["Content-Disposition"] == 'inline; filename="cv-jeremy-lacaze-rusques-devops-fr.pdf"'
     assert r.headers["ETag"] and "no-cache" in r.headers["Cache-Control"]
     assert "Set-Cookie" not in r.headers and "X-Robots-Tag" not in r.headers
     texte = _texte(r.data)
@@ -60,7 +61,7 @@ def test_pdf_public(client):
 
 def test_pdf_anglais(client):
     r = client.get("/en/devops.pdf")
-    assert r.headers["Content-Disposition"] == 'inline; filename="cv-devops-en.pdf"'
+    assert r.headers["Content-Disposition"] == 'inline; filename="cv-jeremy-lacaze-rusques-devops-en.pdf"'
     texte = _texte(r.data)
     assert "Experience" in texte and "Education" in texte and "Expériences" not in texte
     assert "cv.nanodeus.com/en/devops" in texte and _pages(r.data) <= 2
@@ -86,7 +87,7 @@ def test_pdf_complet_admin(admin):
     app = admin.application
     r = admin.get(f"/admin/versions/{_id(app, 'devops')}/cv.pdf?complet=1")
     assert r.status_code == 200 and r.mimetype == "application/pdf"
-    assert r.headers["Content-Disposition"] == 'attachment; filename="cv-devops-fr-complet.pdf"'
+    assert r.headers["Content-Disposition"] == 'attachment; filename="cv-jeremy-lacaze-rusques-devops-fr-complet.pdf"'
     # Témoin : l'extraction voit bien les coordonnées quand elles sont imprimées.
     texte = _texte(r.data)
     assert EMAIL in texte and "99 88 77 66" in texte
@@ -96,7 +97,7 @@ def test_pdf_complet_admin(admin):
 def test_pdf_complet_anglais(admin):
     app = admin.application
     r = admin.get(f"/admin/versions/{_id(app, 'devops')}/cv.pdf?complet=1&lang=en")
-    assert r.headers["Content-Disposition"] == 'attachment; filename="cv-devops-en-complet.pdf"'
+    assert r.headers["Content-Disposition"] == 'attachment; filename="cv-jeremy-lacaze-rusques-devops-en-complet.pdf"'
     assert "Experience" in _texte(r.data)
 
 
@@ -104,7 +105,7 @@ def test_pdf_public_depuis_admin_brouillon(admin):
     app = admin.application
     r = admin.get(f"/admin/versions/{_id(app, 'brouillon')}/cv.pdf")
     assert r.status_code == 200
-    assert r.headers["Content-Disposition"] == 'attachment; filename="cv-brouillon-fr.pdf"'
+    assert r.headers["Content-Disposition"] == 'attachment; filename="cv-jeremy-lacaze-rusques-brouillon-fr.pdf"'
     texte = _texte(r.data)
     assert EMAIL not in texte and "99 88 77 66" not in texte
 
@@ -219,3 +220,13 @@ def test_aucune_ressource_externe(monkeypatch):
     html = ('<html><head><style>@import url("http://127.0.0.1:9/a.css");</style></head>'
             '<body><img src="http://127.0.0.1:9/x.png"><p>Bonjour</p></body></html>')
     assert "Bonjour" in _texte(pdf.rendre_pdf(html))
+
+
+@pytest.mark.parametrize(("nom", "complet", "attendu"), [
+    ("Jérémy Lacaze-Rusques", False, "cv-jeremy-lacaze-rusques-devops-fr.pdf"),
+    ("  Zoë  O'Brien ", True, "cv-zoe-o-brien-devops-fr-complet.pdf"),
+    ("", False, "cv-devops-fr.pdf"),
+])
+def test_nom_fichier(nom, complet, attendu):
+    vue = SimpleNamespace(nom=nom, slug="devops", lang="fr")
+    assert pdf.nom_fichier(vue, complet) == attendu

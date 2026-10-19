@@ -13,7 +13,7 @@ from cv.journal import empreinte, journaliser, maintenant_utc
 from cv.langue import suggerer_anglais
 from cv.medias import lire_photo, servir_photo
 from cv.models import SLUG, Version
-from cv.pdf import html_pdf, pdf_en_cache
+from cv.pdf import html_pdf, nom_fichier, pdf_en_cache
 from cv.vue import assembler_vue, champ, version_publique
 
 bp = Blueprint("public", __name__)
@@ -83,7 +83,7 @@ def version_pdf(slug):
     reponse = make_response(contenu)
     reponse.mimetype = "application/pdf"
     reponse.set_etag(etag)
-    reponse.headers["Content-Disposition"] = f'inline; filename="cv-{vue.slug}-{g.lang}.pdf"'
+    reponse.headers["Content-Disposition"] = f'inline; filename="{nom_fichier(vue)}"'
     # Toujours revalidé : l'ETag suit le contenu, un PDF périmé n'est jamais resservi.
     reponse.headers["Cache-Control"] = "no-cache"
     if vue.noindex:
