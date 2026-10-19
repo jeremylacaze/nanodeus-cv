@@ -38,7 +38,7 @@ umask 077
   echo "CV_SEL_HMAC=$(openssl rand -hex 32)"
   echo "CV_URL_PUBLIQUE=https://cv.nanodeus.com"
   echo "CV_ADMIN_ECOUTE=<ip-tailnet>:8780"
-  echo "CV_ADMIN_HOTES=<ip-tailnet>"
+  echo "CV_ADMIN_HOTES=<ip-tailnet>"    # ajouter ,<nom-magicdns> pour ouvrir l'admin par son nom
 } > .env
 nano .env    # ajouter les variables CV_SMTP_* et CV_EMAIL_* (étape 4)
 ```
@@ -134,7 +134,10 @@ Une fois les secrets posés, effacer la clé privée du poste :
 ## 4. Envoi des emails (Brevo)
 
 1. Créer un compte Brevo gratuit.
-2. Dans *Senders, Domains & Dedicated IPs → Domains*, authentifier `nanodeus.com`.
+2. Dans *Senders, Domains & Dedicated IPs → Domains*, authentifier `nanodeus.com`, et
+   surtout pas `cv.nanodeus.com` : Brevo poserait alors son CNAME de marque sur le nom
+   `cv`, qui pointe déjà vers le serveur. Un nom ne peut pas porter un CNAME à côté
+   d'un autre enregistrement : le site tomberait.
    Brevo demande plusieurs enregistrements : le code de vérification, la clé DKIM et
    un enregistrement DMARC. Les créer dans le DNS netcup. Si aucune politique DMARC
    n'existe encore, `_dmarc` en TXT `v=DMARC1; p=none;` suffit pour commencer.
@@ -144,7 +147,7 @@ Une fois les secrets posés, effacer la clé privée du poste :
 
    ```
    CV_SMTP_HOTE=smtp-relay.brevo.com
-   CV_SMTP_PORT=587
+   CV_SMTP_PORT=2525
    CV_SMTP_TLS=starttls
    CV_SMTP_UTILISATEUR=<identifiant SMTP affiché par Brevo>
    CV_SMTP_MOT_DE_PASSE=<clé SMTP>
@@ -152,10 +155,19 @@ Une fois les secrets posés, effacer la clé privée du poste :
    CV_EMAIL_DESTINATAIRE=<boîte perso>
    ```
 
+   Le port est 2525, pas 587 : le netcup bloque en sortie les ports SMTP 587 et 465
+   (la connexion expire). Brevo accepte 2525 avec STARTTLS.
+5. Si le site tourne déjà, recréer les conteneurs pour qu'ils relisent le `.env`
+   (un `restart` ne suffit pas) :
+   `docker compose --project-directory /opt/nanodeus-cv -f /opt/nanodeus-cv/compose.yml up -d`.
+
 **Contrôle :**
 - Brevo affiche le domaine comme authentifié ;
 - après la mise en ligne (étape 6), le bouton « Envoyer un email de test » de l'admin
   fait arriver un email dans la boîte perso, sans passer par les indésirables.
+- depuis le conteneur admin, le port est joignable :
+  `docker compose --project-directory /opt/nanodeus-cv -f /opt/nanodeus-cv/compose.yml exec -T admin python -c "import socket; socket.create_connection(('smtp-relay.brevo.com', 2525), 5)"`
+  ne renvoie rien.
 
 ## 5. Timer de nuit : sauvegarde et purge
 
