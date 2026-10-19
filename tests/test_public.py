@@ -220,3 +220,18 @@ def test_erreur_500_en_json(client_qui_plante):
     assert r.status_code == 500 and r.is_json and r.json["ok"] is False
     # Le message prévient qu'un renvoi immédiat pourrait faire un doublon.
     assert "peut-être" in r.json["message"] and EMAIL not in r.get_data(as_text=True)
+
+
+def test_sante_public(client, app):
+    from cv.models import Visite
+    with app.extensions["cv_sessions"]() as s:
+        avant = s.query(Visite).count()
+    r = client.get("/sante")
+    assert r.status_code == 200 and r.data == b"ok" and r.mimetype == "text/plain"
+    assert "Set-Cookie" not in r.headers
+    with app.extensions["cv_sessions"]() as s:
+        assert s.query(Visite).count() == avant
+
+
+def test_sante_absente_en_admin(admin):
+    assert admin.get("/sante").status_code == 404

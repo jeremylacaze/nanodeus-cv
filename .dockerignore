@@ -1,0 +1,25 @@
+# Rien de personnel ni d'outillage dans l'image publique.
+.git/
+.gitignore
+.venv/
+.env*
+data/
+tests/
+docs/
+deploy/
+.github/
+.superpowers/
+__pycache__/
+*.pyc
+*.mo
+.pytest_cache/
+.ruff_cache/
+.DS_Store
+.dockerignore
+.hadolint.yaml
+Dockerfile
+ruff.toml
+pytest.ini
+requirements-dev.txt
+requirements-ci.txt
+dev.sh

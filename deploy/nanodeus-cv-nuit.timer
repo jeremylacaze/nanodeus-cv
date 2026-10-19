@@ -1,0 +1,13 @@
+# Déclenche nanodeus-cv-nuit.service chaque nuit, après la sauvegarde de ReadLN
+# (03:30), pour ne pas se disputer le verrou du dépôt restic.
+[Unit]
+Description=cv.nanodeus.com : sauvegarde et purge nocturnes
+
+[Timer]
+OnCalendar=*-*-* 04:15:00
+RandomizedDelaySec=300
+# Une nuit manquée (serveur éteint) est rattrapée au démarrage suivant.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

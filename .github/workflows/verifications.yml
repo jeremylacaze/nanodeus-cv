@@ -1,0 +1,155 @@
+# Vérifications communes à la CI (ci.yml) et à la mise en ligne (release.yml) :
+# une seule définition, la release ne peut pas vérifier moins que la CI.
+#
+# Les actions tierces sont épinglées par SHA de commit, jamais par tag : un tag
+# se réécrit. Dependabot tient ces SHA à jour (.github/dependabot.yml).
+name: Vérifications
+
+on:
+  workflow_call:
+    inputs:
+      cache-pip:
+        description: >-
+          Restaurer le cache pip. La release le désactive : un cache écrit par
+          une autre branche ne doit jamais alimenter l'image de production.
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+          cache: ${{ inputs.cache-pip && 'pip' || '' }}
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      # Pango et DejaVu, comme dans l'image : WeasyPrint est importé au
+      # chargement de l'application, et les tests du PDF comptent ses pages.
+      - name: Installer Pango et les polices
+        run: >-
+          sudo apt-get update -q && sudo apt-get install -y -q --no-install-recommends
+          libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 fonts-dejavu-core fonts-dejavu-extra
+
+      - name: Installer les dépendances
+        run: pip install -r requirements-dev.txt
+
+      - name: Tests
+        run: pytest -q
+
+  # Les contrôles rapides, réunis en un job. Chacun tourne même si un précédent
+  # a échoué (`!cancelled()`) : le run les signale tous à la fois.
+  controles:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GITLEAKS_VERSION: "8.30.1"
+      GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+    steps:
+      # Historique complet : gitleaks parcourt tous les commits.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+          cache: ${{ inputs.cache-pip && 'pip' || '' }}
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+            requirements-ci.txt
+
+      # gitleaks : binaire épinglé et vérifié par checksum.
+      - name: Installer les outils
+        id: outils
+        run: |
+          pip install -r requirements-dev.txt -r requirements-ci.txt
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -fsSL -o "$RUNNER_TEMP/$archive" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/$archive"
+          echo "$GITLEAKS_SHA256  $RUNNER_TEMP/$archive" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/$archive" -C "$RUNNER_TEMP" gitleaks
+
+      # Les tests bâtissent le schéma par create_all : ils ne voient jamais les
+      # migrations. `upgrade head` rejoue la chaîne comme la prod, `check`
+      # compare le résultat aux modèles (une colonne sans migration échoue ici).
+      - name: Migrations — rejouer toute la chaîne
+        id: migrations
+        if: ${{ !cancelled() && steps.outils.outcome == 'success' }}
+        run: |
+          echo "CV_DATA_DIR=$RUNNER_TEMP/donnees" >> "$GITHUB_ENV"
+          CV_DATA_DIR="$RUNNER_TEMP/donnees" alembic upgrade head
+
+      - name: Migrations — modèles et migrations concordent
+        if: ${{ !cancelled() && steps.migrations.outcome == 'success' }}
+        run: alembic check
+
+      # Failles connues (OSV / PyPI) dans les dépendances épinglées. Un avis
+      # publié entre deux pushes rend ce contrôle rouge sans changement de code.
+      - name: Dépendances (pip-audit)
+        if: ${{ !cancelled() && steps.outils.outcome == 'success' }}
+        run: pip-audit -r requirements.txt -r requirements-dev.txt
+
+      # Analyse statique des workflows : actions non épinglées, jetons trop
+      # larges, injection de modèle (`${{ }}` dans `run`). La release détient
+      # la clé SSH du serveur.
+      - name: Workflows (zizmor)
+        if: ${{ !cancelled() && steps.outils.outcome == 'success' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: zizmor --format=github .
+
+      # Secrets commités par erreur, sur tout l'historique.
+      - name: Secrets dans l'historique (gitleaks)
+        if: ${{ !cancelled() && steps.outils.outcome == 'success' }}
+        run: '"$RUNNER_TEMP/gitleaks" git . --redact --no-banner --exit-code 1'
+
+      - name: Lint Python (ruff)
+        if: ${{ !cancelled() && steps.outils.outcome == 'success' }}
+        run: ruff check --output-format=github .
+
+  # Image : hadolint, build sans cache (la release appelle aussi ce workflow,
+  # un cache partagé avec d'autres branches pourrait l'empoisonner), puis test
+  # de fumée (scripts/fumee-image.sh) sur le compose de production.
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # hadolint 2.15.1 (variante debian), épinglé par digest.
+      HADOLINT: hadolint/hadolint@sha256:9a3944b7fddcb947d1ffd90829ac1a6e5c30479223358f249d8b96c7d0019e27
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Dockerfile (hadolint)
+        run: >-
+          docker run --rm -v "$PWD:/src:ro" -w /src "$HADOLINT"
+          hadolint --no-color --config .hadolint.yaml Dockerfile
+
+      - name: Build de l'image
+        run: docker build -t nanodeus-cv:ci .
+
+      # La fumée compte les pages des PDF sur l'hôte : pypdf n'est pas dans l'image.
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+
+      - name: Installer pypdf
+        run: pip install pypdf==6.21.1
+
+      - name: Test de fumée
+        run: scripts/fumee-image.sh nanodeus-cv:ci

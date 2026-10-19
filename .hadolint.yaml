@@ -1,0 +1,8 @@
+# hadolint (job `image` de .github/workflows/verifications.yml) : tout
+# avertissement, même « info », fait échouer.
+failure-threshold: info
+
+ignored:
+  # Épingler les versions apt : sur debian-slim, l'archive ne garde que la
+  # dernière version d'un paquet, et chaque correctif de sécurité casserait le build.
+  - DL3008
