@@ -36,6 +36,12 @@ def _pages(contenu: bytes) -> int:
     return len(PdfReader(BytesIO(contenu)).pages)
 
 
+def _legende_qr(texte: str) -> str:
+    """La légende du QR code passe à la ligne là où la police le décide ; pypdf colle
+    alors les deux mots de part et d'autre de la coupure. On la compare sans espaces."""
+    return texte.replace(" ", "")
+
+
 def _cache(app):
     dossier = app.config["CV"].DOSSIER_CACHE_PDF
     return sorted(dossier.iterdir()) if dossier.exists() else []
@@ -56,8 +62,9 @@ def test_pdf_public(client):
     # Les titres de section sont en petites capitales, comme sur la page web.
     for attendu in ("LACAZE-RUSQUES", "Administrateur applicatif / DevOps", "EXPÉRIENCES",
                     "FORMATIONS", "cv.nanodeus.com/devops", "B / A2", "PARCOURS",
-                    "Scannez pour la version en ligne", "PHONE *** · EMAIL ***"):
+                    "PHONE *** · EMAIL ***"):
         assert attendu in texte
+    assert "Scannezpourlaversionenligne" in _legende_qr(texte)
     # En France, un CV tient sur une page : le contenu d'amorçage doit y tenir.
     assert "https://" not in texte and _pages(r.data) == 1
 
@@ -67,7 +74,7 @@ def test_pdf_anglais(client):
     assert r.headers["Content-Disposition"] == 'inline; filename="cv-jeremy-lacaze-rusques-devops-en.pdf"'
     texte = _texte(r.data)
     assert "EXPERIENCE" in texte and "EDUCATION" in texte and "EXPÉRIENCES" not in texte
-    assert "Scan for the online version" in texte and "Scannez" not in texte
+    assert "Scanfortheonlineversion" in _legende_qr(texte) and "Scannez" not in texte
     assert "cv.nanodeus.com/en/devops" in texte and _pages(r.data) == 1
 
 
