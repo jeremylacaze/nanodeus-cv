@@ -1,7 +1,9 @@
 # Déploiement de cv.nanodeus.com
 
 Runbook de la production sur le serveur netcup, qui héberge déjà ReadLN (Traefik,
-réseau Docker `proxy`, compte `deploy`, dépôt restic). Notations :
+réseau Docker `proxy`, compte `deploy`, dépôt restic). Le compte `deploy` n'a **pas**
+`sudo` : les gestes marqués « compte d'administration » se font avec le compte qui l'a.
+Notations :
 
 - `<netcup>` : nom ou IP publique du serveur ;
 - `<ip-tailnet>` : son adresse Tailscale (100.x.y.z) ;
@@ -94,13 +96,24 @@ Poser ensuite les quatre secrets de l'environnement :
 gh secret set NETCUP_HOST --env production         # <netcup>
 gh secret set NETCUP_USER --env production         # deploy
 gh secret set NETCUP_SSH_KEY --env production < ~/.ssh/nanodeus-cv-ci
-ssh-keyscan -t ed25519 <netcup> | gh secret set NETCUP_KNOWN_HOSTS --env production
 ```
 
-Comparer l'empreinte renvoyée par `ssh-keyscan` à celle du serveur
-(`ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub`, lancé sur le serveur) **avant** de
-la poser. La pipeline refuse tout hôte inconnu : elle tourne en
-`StrictHostKeyChecking=yes`.
+La clé d'hôte se vérifie **avant** d'être posée. La pipeline lui fera une confiance
+aveugle : elle tourne en `StrictHostKeyChecking=yes` et refuse tout autre hôte.
+
+```sh
+ssh-keyscan -t ed25519 <netcup> > hote-netcup
+ssh-keygen -lf hote-netcup
+```
+
+Comparer l'empreinte affichée à celle que donne, **sur le serveur**,
+`ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub`. Une fois les deux empreintes
+identiques, et seulement à ce moment-là :
+
+```sh
+gh secret set NETCUP_KNOWN_HOSTS --env production < hote-netcup
+rm hote-netcup
+```
 
 Une fois les secrets posés, effacer la clé privée du poste :
 `rm ~/.ssh/nanodeus-cv-ci`.
@@ -136,13 +149,23 @@ Une fois les secrets posés, effacer la clé privée du poste :
 ## 5. Timer de nuit : sauvegarde et purge
 
 L'unité `nanodeus-cv-nuit` tourne à 04:15, après la sauvegarde de ReadLN (03:30). Elle
-sauvegarde la base et les photos dans le dépôt restic de ReadLN, sous
-`--host nanodeus-cv`, puis purge les sels passés et les visites de plus de six mois.
+purge d'abord les sels passés et les visites de plus de six mois, puis sauvegarde la
+base et les photos dans le dépôt restic de ReadLN, sous `--host nanodeus-cv`. Une purge
+en échec n'empêche pas la sauvegarde ; elle se lit dans le journal de l'unité.
+
+Les unités sont déposées par `deploy` à côté des scripts. On évite `/tmp`, qui est un
+tmpfs sur ce serveur :
 
 ```sh
-scp deploy/nanodeus-cv-nuit.service deploy/nanodeus-cv-nuit.timer deploy@<netcup>:/tmp/
-ssh deploy@<netcup>
-sudo cp /tmp/nanodeus-cv-nuit.service /tmp/nanodeus-cv-nuit.timer /etc/systemd/system/
+scp deploy/nanodeus-cv-nuit.service deploy/nanodeus-cv-nuit.timer \
+    deploy@<netcup>:/opt/nanodeus-cv/
+```
+
+Puis, avec le **compte d'administration** :
+
+```sh
+sudo cp /opt/nanodeus-cv/nanodeus-cv-nuit.service /opt/nanodeus-cv/nanodeus-cv-nuit.timer \
+    /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now nanodeus-cv-nuit.timer
 ```
@@ -151,10 +174,10 @@ Le mot de passe du dépôt, `/opt/readln/restic-password`, est seulement lu. On 
 supprime **jamais**, et on ne le régénère **jamais** : sans lui, toutes les sauvegardes
 du serveur sont perdues.
 
-**Contrôle :**
+**Contrôle**, avec le compte d'administration :
 - `systemctl list-timers nanodeus-cv-nuit.timer` affiche le prochain passage ;
 - après la mise en ligne, `sudo systemctl start nanodeus-cv-nuit.service` puis
-  `journalctl -u nanodeus-cv-nuit -n 30` se terminent par « Sauvegarde nocturne
+  `sudo journalctl -u nanodeus-cv-nuit -n 30` se terminent par « Sauvegarde nocturne
   terminée ».
 
 ## 6. Mise en ligne par tag
@@ -189,24 +212,38 @@ visibility → Public*), puis relancer le job (*Re-run failed jobs*).
 ## 7. Retour arrière
 
 Quand le déploiement échoue après la bascule, `deploy.sh` affiche la commande de retour
-arrière, avec l'image précédente. Il ne la lance jamais lui-même. Dans une session
-SSH sur le serveur :
+arrière, avec l'image précédente. Il ne la lance jamais lui-même. Les journaux de
+l'échec restent sur le serveur, dans `/opt/nanodeus-cv/echecs/` : ils peuvent contenir
+des demandes de contact, et le log de la release est public. Les SHA des images
+publiées se trouvent dans l'historique des runs de `release.yml`.
+
+**Release sans migration.** Dans une session SSH sur le serveur :
 
 ```sh
 /opt/nanodeus-cv/deploy.sh ghcr.io/jeremylacaze/nanodeus-cv:<sha précédent>
 ```
 
-Les SHA des images publiées se trouvent dans l'historique des runs de `release.yml`.
-Le retour arrière ramène le code, mais pas la base. Si la release fautive embarquait
-une migration, il faut aussi restaurer la sauvegarde `pre-deploy` qui l'a précédée
-(étape 8).
+**Release avec migration.** L'ancienne image ne connaît pas la révision Alembic de la
+base, et son service `migrate` refuse de démarrer. La commande ci-dessus échoue donc,
+puis propose à son tour l'image fautive. L'ordre est le suivant :
+
+1. arrêter les services (étape 8, point 2) ;
+2. restaurer le snapshot `pre-deploy` pris juste avant la release fautive (étape 8,
+   points 1 et 3) ;
+3. **sans** passer par l'étape 8, point 4, lancer
+   `/opt/nanodeus-cv/deploy.sh ghcr.io/jeremylacaze/nanodeus-cv:<sha précédent>`.
+   Le script réécrit `CV_IMAGE`, puis démarre l'ancienne image sur la base restaurée.
+
+Un `up -d` lancé avant le point 3 démarrerait l'image fautive, qui migrerait de nouveau
+la base restaurée.
 
 **Contrôle :** les contrôles de l'étape 6 repassent au vert.
 
 ## 8. Restauration depuis restic
 
-Toutes les commandes se lancent sur le serveur, dans `/opt/nanodeus-cv`. Commencer par
-définir l'accès au dépôt :
+Toutes les commandes se lancent sur le serveur, dans `/opt/nanodeus-cv`. Pendant la
+restauration, ne poser aucun tag `v*`, et ne pas la lancer à l'heure du timer (04:15).
+Commencer par définir l'accès au dépôt :
 
 ```sh
 RESTIC=(docker run --rm --hostname nanodeus-cv
@@ -243,7 +280,7 @@ attendu.
 La pipeline ne dépose **aucun** fichier sur le serveur. Elle tire une image et rejoue
 `deploy.sh`, rien de plus. Toute modification de `deploy/compose.yml`, `deploy.sh`,
 `backup.sh`, `ssh-commande.sh` ou des unités systemd exige un nouveau `scp`, comme aux
-étapes 1 et 5. Sans cela, le serveur continue d'exécuter l'ancienne version, sans
+étapes 1 et 5 (et, pour les unités, un nouveau `sudo cp` suivi d'un `daemon-reload`). Sans cela, le serveur continue d'exécuter l'ancienne version, sans
 aucun avertissement.
 
 Après chaque copie, comparer les fichiers :

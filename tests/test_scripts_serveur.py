@@ -13,12 +13,13 @@ IMAGE = "ghcr.io/jeremylacaze/nanodeus-cv:" + "a" * 40
 PRECEDENTE = "ghcr.io/jeremylacaze/nanodeus-cv:" + "b" * 40
 
 # Note ses arguments, répond `cid` à `ps -q`, `$FAUX_ETAT` à l'état de santé et
-# `running` à l'état du conteneur. `volume inspect` échoue si FAUX_VOLUME est vide.
+# `running` à l'état du conteneur, une ligne de journal à `logs`. `volume inspect` échoue si FAUX_VOLUME est vide.
 FAUX_DOCKER = """#!/bin/sh
 printf '%s\\n' "$*" >> "$FAUX_JOURNAL"
 case "$*" in
   *"volume inspect"*) [ -n "$FAUX_VOLUME" ] || exit 1 ;;
   *"ps -q"*) echo cid ;;
+  *logs*) echo "trace avec visiteur@exemple.test" ;;
   *Health*) echo "$FAUX_ETAT" ;;
   *inspect*) echo running ;;
 esac
@@ -106,6 +107,37 @@ def test_deploy_malsain_propose_le_retour(serveur):
     assert f"deploy.sh {PRECEDENTE}" in resultat.stderr
     # Le retour arrière est proposé, jamais exécuté.
     assert f"pull {PRECEDENTE}" not in _appels(serveur)
+
+
+def test_deploy_malsain_garde_les_journaux_hors_de_la_ci(serveur):
+    """Le stderr remonte dans le log public de la release : les journaux de
+    l'application (données de visiteurs) n'y passent jamais, ils restent sur le serveur."""
+    serveur["env"]["FAUX_ETAT"] = "unhealthy"
+    resultat = _lancer("deploy.sh", IMAGE, env=serveur["env"])
+    assert resultat.returncode == 1
+    assert "visiteur@exemple.test" not in resultat.stderr + resultat.stdout
+    [fichier] = (serveur["racine"] / "echecs").iterdir()
+    assert "visiteur@exemple.test" in fichier.read_text()
+    assert stat.S_IMODE(fichier.stat().st_mode) == 0o600
+    assert str(fichier) in resultat.stderr
+    assert "logs --tail 200 migrate public admin" in _appels(serveur)
+
+
+def test_deploy_malsain_dit_l_ordre_en_cas_de_migration(serveur):
+    """Revenir à l'ancienne image sur une base déjà migrée échoue : restaurer d'abord."""
+    serveur["env"]["FAUX_ETAT"] = "unhealthy"
+    resultat = _lancer("deploy.sh", IMAGE, env=serveur["env"])
+    assert "docs/DEPLOIEMENT.md §7" in resultat.stderr
+
+
+def test_nuit_purge_avant_de_sauvegarder():
+    """La purge des visites de plus de six mois ne dépend pas du succès de restic, et
+    la sauvegarde ne contient plus ce qui vient d'être purgé."""
+    lignes = (DEPLOY / "nanodeus-cv-nuit.service").read_text().splitlines()
+    execs = [ligne for ligne in lignes if ligne.startswith("ExecStart=")]
+    assert len(execs) == 2
+    assert execs[0].startswith("ExecStart=-") and execs[0].endswith(" purger")
+    assert execs[1] == "ExecStart=/opt/nanodeus-cv/backup.sh"
 
 
 def test_backup_premiere_mise_en_ligne(serveur, tmp_path):

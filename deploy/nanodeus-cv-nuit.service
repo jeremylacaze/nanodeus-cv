@@ -2,7 +2,7 @@
 # Copié à la main dans /etc/systemd/system/, puis :
 #   sudo systemctl daemon-reload && sudo systemctl enable --now nanodeus-cv-nuit.timer
 [Unit]
-Description=cv.nanodeus.com : sauvegarde restic puis purge des visites et des sels
+Description=cv.nanodeus.com : purge des visites et des sels, puis sauvegarde restic
 Wants=docker.service
 After=docker.service
 
@@ -13,7 +13,9 @@ WorkingDirectory=/opt/nanodeus-cv
 # Le dépôt restic peut être verrouillé par la purge de ReadLN : backup.sh attend
 # jusqu'à 5 minutes par commande.
 TimeoutStartSec=1800
-# Dans l'ordre : un échec de la sauvegarde arrête l'unité avant la purge.
+# La purge d'abord : les sels passés et les visites de plus de six mois
+# disparaissent même quand restic échoue, et la sauvegarde ne les contient plus.
+# Le `-` laisse la sauvegarde tourner si la purge échoue (public arrêté…) : son
+# échec reste lisible dans `journalctl -u nanodeus-cv-nuit`.
+ExecStart=-/usr/bin/docker compose --project-directory /opt/nanodeus-cv -f /opt/nanodeus-cv/compose.yml exec -T public flask --app cv.app purger
 ExecStart=/opt/nanodeus-cv/backup.sh
-# Sels passés et visites de plus de six mois.
-ExecStart=/usr/bin/docker compose --project-directory /opt/nanodeus-cv -f /opt/nanodeus-cv/compose.yml exec -T public flask --app cv.app purger

@@ -41,14 +41,24 @@ docker pull "$IMAGE"
 retour_arriere() {
   if [ -n "$PRECEDENTE" ]; then
     echo "   Retour arrière : $ROOT/deploy.sh $PRECEDENTE" >&2
-    echo "   (une migration a pu tourner : la sauvegarde pre-deploy restaure la base)" >&2
+    echo "   Si cette release a migré la base, l'ancienne image refusera de démarrer :" >&2
+    echo "   restaurer d'abord la sauvegarde pre-deploy (docs/DEPLOIEMENT.md §7)." >&2
   else
     echo "   Aucune image précédente dans le .env : premier déploiement." >&2
   fi
 }
+# Le stderr remonte par SSH dans le log de la release, public comme le dépôt :
+# les journaux de l'application (demandes de contact, traces SQL) restent ici.
 echec() {
   echo "❌ Déploiement de $IMAGE en échec." >&2
-  "${DC[@]}" logs --tail 50 public admin >&2 || true
+  local journal
+  journal="$ROOT/echecs/$(date -u +%Y%m%dT%H%M%SZ).log"
+  if (umask 077 && mkdir -p "$ROOT/echecs" \
+        && "${DC[@]}" logs --tail 200 migrate public admin > "$journal" 2>&1); then
+    echo "   Journaux sur le serveur : $journal" >&2
+  else
+    echo "   Journaux illisibles : docker compose logs migrate public admin, sur le serveur." >&2
+  fi
   retour_arriere
   exit 1
 }
@@ -101,7 +111,7 @@ trap - ERR INT TERM HUP
 echo "✅ $IMAGE en ligne."
 
 # Les anciennes images du seul dépôt de l'application : un retour arrière les
-# retire de ghcr.io, rien ne sert de les garder sur le disque.
+# tire de nouveau depuis ghcr.io, rien ne sert de les garder sur le disque.
 docker images "${IMAGE%:*}" --format '{{.Repository}}:{{.Tag}}' \
   | { grep -vx "$IMAGE" || true; } \
   | xargs -r docker rmi \
