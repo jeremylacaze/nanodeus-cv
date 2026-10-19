@@ -177,3 +177,30 @@ def test_mention_couvre_les_demandes_de_contact(client):
     html, en = _html(client), _html(client, "/en/devops")
     assert "anonyme" not in html and "pseudonyme" in html
     assert "demande de contact" in html and "contact request" in en
+
+
+@pytest.mark.parametrize("url", ["/devops", "/devops/contact", "/inconnue"])
+def test_script_du_theme_dans_l_entete_sans_defer(client, url):
+    # Posé avant le premier affichage : pas de flash d'un thème à l'autre.
+    tete = client.get(url).get_data(as_text=True).split("</head>")[0]
+    assert re.search(r'<script src="/static/theme\.js" nonce="[^"]+"></script>', tete)
+    assert client.get("/static/theme.js").status_code == 200
+
+
+def test_selecteur_de_theme_masque_sans_js(client):
+    html = _html(client)
+    bloc = re.search(r'<div class="theme" hidden>.*?</div>', html, re.S).group(0)
+    assert '<select data-action="theme" aria-label="Thème">' in bloc
+    assert re.findall(r'<option value="(\w+)">', bloc) == ["systeme", "sombre", "clair", "beige"]
+    assert ">Système<" in bloc and ">Sombre<" in bloc and ">Clair<" in bloc and ">Beige<" in bloc
+
+
+def test_selecteur_de_theme_en_anglais(client):
+    html = _html(client, "/en/devops")
+    assert 'aria-label="Theme"' in html
+    assert ">System<" in html and ">Dark<" in html and ">Light<" in html and ">Beige<" in html
+
+
+def test_mention_du_choix_de_theme(client):
+    assert "votre choix de thème reste dans votre navigateur" in _html(client)
+    assert "your theme choice stays in your browser" in _html(client, "/en/devops")

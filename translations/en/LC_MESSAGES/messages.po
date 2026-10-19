@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: nanodeus-cv VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-19 00:06+0200\n"
+"POT-Creation-Date: 2026-10-19 11:01+0200\n"
 "PO-Revision-Date: 2026-10-18 19:17+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -28,8 +28,11 @@ msgstr[1] "%(num)s years"
 msgid "Artefacts"
 msgstr "Artifacts"
 
-msgid "Ce site ne dépose aucun cookie. Chaque visite est notée sans votre adresse IP : date, page, source (LinkedIn, QR code…), type d'appareil et une empreinte pseudonyme renouvelée chaque jour. Ces visites sont effacées après 6 mois. Une demande de contact (email, message, nom et entreprise si indiqués) est gardée jusqu'à ce que Jeremy la supprime."
-msgstr "This site sets no cookies. Each visit is recorded without your IP address: date, page, source (LinkedIn, QR code…), device type and a pseudonymous fingerprint renewed every day. These visits are deleted after 6 months. A contact request (email, message, and name and company if given) is kept until Jeremy deletes it."
+msgid "Beige"
+msgstr "Beige"
+
+msgid "Ce site ne dépose aucun cookie ; votre choix de thème reste dans votre navigateur. Chaque visite est notée sans votre adresse IP : date, page, source (LinkedIn, QR code…), type d'appareil et une empreinte pseudonyme renouvelée chaque jour. Ces visites sont effacées après 6 mois. Une demande de contact (email, message, nom et entreprise si indiqués) est gardée jusqu'à ce que Jeremy la supprime."
+msgstr "This site sets no cookies; your theme choice stays in your browser. Each visit is recorded without your IP address: date, page, source (LinkedIn, QR code…), device type and a pseudonymous fingerprint renewed every day. These visits are deleted after 6 months. A contact request (email, message, and name and company if given) is kept until Jeremy deletes it."
 
 msgid "Centres d'intérêt"
 msgstr "Interests"
@@ -42,6 +45,9 @@ msgstr "This request could not be accepted."
 
 msgid "Chiffres clés"
 msgstr "Key figures"
+
+msgid "Clair"
+msgstr "Light"
 
 msgid "Demander l'accès"
 msgstr "Request access"
@@ -139,12 +145,21 @@ msgstr "Secrets"
 msgid "Soft skills"
 msgstr "Soft skills"
 
+msgid "Sombre"
+msgstr "Dark"
+
 msgid "Stack"
 msgstr "Stack"
+
+msgid "Système"
+msgstr "System"
 
 #, python-format
 msgid "Tests · soft skills (%(n)s/%(n)s passés)"
 msgstr "Tests · soft skills (%(n)s/%(n)s passed)"
+
+msgid "Thème"
+msgstr "Theme"
 
 msgid "Trop de demandes pour le moment. Réessayez plus tard."
 msgstr "Too many requests for now. Please try again later."
