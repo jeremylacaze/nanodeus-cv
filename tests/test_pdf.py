@@ -53,18 +53,22 @@ def test_pdf_public(client):
     assert r.headers["ETag"] and "no-cache" in r.headers["Cache-Control"]
     assert "Set-Cookie" not in r.headers and "X-Robots-Tag" not in r.headers
     texte = _texte(r.data)
-    for attendu in ("LACAZE-RUSQUES", "Administrateur applicatif / DevOps", "Expériences",
-                    "Formations", "cv.nanodeus.com/devops", "B / A2"):
+    # Les titres de section sont en petites capitales, comme sur la page web.
+    for attendu in ("LACAZE-RUSQUES", "Administrateur applicatif / DevOps", "EXPÉRIENCES",
+                    "FORMATIONS", "cv.nanodeus.com/devops", "B / A2", "PARCOURS",
+                    "Scannez pour la version en ligne", "PHONE *** · EMAIL ***"):
         assert attendu in texte
-    assert "https://" not in texte and _pages(r.data) <= 2
+    # En France, un CV tient sur une page : le contenu d'amorçage doit y tenir.
+    assert "https://" not in texte and _pages(r.data) == 1
 
 
 def test_pdf_anglais(client):
     r = client.get("/en/devops.pdf")
     assert r.headers["Content-Disposition"] == 'inline; filename="cv-jeremy-lacaze-rusques-devops-en.pdf"'
     texte = _texte(r.data)
-    assert "Experience" in texte and "Education" in texte and "Expériences" not in texte
-    assert "cv.nanodeus.com/en/devops" in texte and _pages(r.data) <= 2
+    assert "EXPERIENCE" in texte and "EDUCATION" in texte and "EXPÉRIENCES" not in texte
+    assert "Scan for the online version" in texte and "Scannez" not in texte
+    assert "cv.nanodeus.com/en/devops" in texte and _pages(r.data) == 1
 
 
 @pytest.mark.parametrize("url", ["/devops.pdf", "/en/devops.pdf", "/lead-tech.pdf",
@@ -90,7 +94,7 @@ def test_pdf_complet_admin(admin):
     assert r.headers["Content-Disposition"] == 'attachment; filename="cv-jeremy-lacaze-rusques-devops-fr-complet.pdf"'
     # Témoin : l'extraction voit bien les coordonnées quand elles sont imprimées.
     texte = _texte(r.data)
-    assert EMAIL in texte and "99 88 77 66" in texte
+    assert EMAIL in texte and "99 88 77 66" in texte and "***" not in texte
     assert _cache(app) == []
 
 
@@ -98,7 +102,7 @@ def test_pdf_complet_anglais(admin):
     app = admin.application
     r = admin.get(f"/admin/versions/{_id(app, 'devops')}/cv.pdf?complet=1&lang=en")
     assert r.headers["Content-Disposition"] == 'attachment; filename="cv-jeremy-lacaze-rusques-devops-en-complet.pdf"'
-    assert "Experience" in _texte(r.data)
+    assert "EXPERIENCE" in _texte(r.data)
 
 
 def test_pdf_public_depuis_admin_brouillon(admin):
@@ -119,6 +123,32 @@ def test_page_version_liens_pdf(admin):
     corps = admin.get(f"/admin/versions/{id_}").get_data(as_text=True)
     for lien in ("cv.pdf", "cv.pdf?lang=en", "cv.pdf?complet=1", "cv.pdf?lang=en&amp;complet=1"):
         assert f'href="/admin/versions/{id_}/{lien}"' in corps
+
+
+def test_page_version_sans_avertissement(admin):
+    corps = admin.get(f"/admin/versions/{_id(admin.application, 'devops')}").get_data(as_text=True)
+    assert "pages : en France" not in corps
+
+
+def test_page_version_avertit_si_plus_d_une_page(fabrique_app):
+    def allonger(s):
+        s.scalar(select(Version).where(Version.slug == "devops")).accroche_en = "Long. " * 1500
+    admin = fabrique_app(role="admin", modifier=allonger).test_client()
+    corps = admin.get(f"/admin/versions/{_id(admin.application, 'devops')}").get_data(as_text=True)
+    assert "Le PDF EN fait" in corps and "Le PDF FR fait" not in corps
+
+
+def test_page_version_rend_chaque_langue_dans_sa_langue(admin):
+    # Le PDF anglais compté par la page d'admin est bien celui servi en anglais :
+    # le télécharger ensuite le trouve en cache, sans nouveau rendu.
+    app = admin.application
+    id_ = _id(app, "devops")
+    admin.get(f"/admin/versions/{id_}")
+    assert len(_cache(app)) == 2
+    texte = _texte(admin.get(f"/admin/versions/{id_}/cv.pdf?lang=en").data)
+    assert "EXPERIENCE" in texte and len(_cache(app)) == 2
+    # La page d'admin elle-même reste en français.
+    assert "Consulter" in admin.get(f"/admin/versions/{id_}").get_data(as_text=True)
 
 
 @pytest.mark.parametrize("url", ["/brouillon.pdf", "/inconnue.pdf", "/Devops.pdf",
@@ -157,11 +187,33 @@ def test_cache_reutilise_puis_invalide(client):
     assert r3.headers["ETag"] != r1.headers["ETag"] and "Accroche neuve" in _texte(r3.data)
 
 
+def _rendu_factice(html):
+    return html.encode(), 1
+
+
+def test_cache_garde_le_nombre_de_pages(tmp_path, monkeypatch):
+    rendus = []
+
+    def rendu(html):
+        rendus.append(html)
+        return html.encode(), 3
+    monkeypatch.setattr(pdf, "rendu_pdf", rendu)
+    contenu, etag, pages = pdf.pdf_en_cache(tmp_path, "<p>x</p>")
+    assert (contenu, pages) == (b"<p>x</p>", 3) and (tmp_path / f"{etag}-3.pdf").exists()
+    assert pdf.pdf_en_cache(tmp_path, "<p>x</p>") == (contenu, etag, 3) and len(rendus) == 1
+
+
+def test_rendu_compte_les_pages():
+    html = '<p style="break-after: page">1</p><p>2</p>'
+    contenu, pages = pdf.rendu_pdf(html)
+    assert pages == 2 == _pages(contenu)
+
+
 def test_cache_borne(tmp_path, monkeypatch):
-    monkeypatch.setattr(pdf, "rendre_pdf", lambda html: html.encode())
+    monkeypatch.setattr(pdf, "rendu_pdf", _rendu_factice)
     for i in range(pdf.CACHE_MAX + 5):
-        contenu, etag = pdf.pdf_en_cache(tmp_path, f"<p>{i}</p>")
-        assert contenu == f"<p>{i}</p>".encode() and (tmp_path / f"{etag}.pdf").exists()
+        contenu, etag, _ = pdf.pdf_en_cache(tmp_path, f"<p>{i}</p>")
+        assert contenu == f"<p>{i}</p>".encode() and (tmp_path / f"{etag}-1.pdf").exists()
     assert len(list(tmp_path.iterdir())) == pdf.CACHE_MAX
     # Le plus récent reste, le plus ancien est parti.
     assert pdf.pdf_en_cache(tmp_path, f"<p>{pdf.CACHE_MAX + 4}</p>")[0]
@@ -171,7 +223,7 @@ def test_cache_borne(tmp_path, monkeypatch):
 def test_cache_elague_par_un_autre_processus(tmp_path, monkeypatch):
     # Lu, puis élagué par l'autre conteneur avant le rafraîchissement de sa date :
     # le contenu est déjà en mémoire, la réponse ne doit pas échouer.
-    monkeypatch.setattr(pdf, "rendre_pdf", lambda html: html.encode())
+    monkeypatch.setattr(pdf, "rendu_pdf", _rendu_factice)
     pdf.pdf_en_cache(tmp_path, "<p>x</p>")
 
     def disparu(chemin, *args):
@@ -181,7 +233,7 @@ def test_cache_elague_par_un_autre_processus(tmp_path, monkeypatch):
 
 
 def test_cache_ecriture_interrompue_sans_tmp(tmp_path, monkeypatch):
-    monkeypatch.setattr(pdf, "rendre_pdf", lambda html: html.encode())
+    monkeypatch.setattr(pdf, "rendu_pdf", _rendu_factice)
 
     def echec(*args):
         raise OSError("disque plein")

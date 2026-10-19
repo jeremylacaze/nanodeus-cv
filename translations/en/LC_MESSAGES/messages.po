@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: nanodeus-cv VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-19 11:01+0200\n"
+"POT-Creation-Date: 2026-10-19 21:34+0200\n"
 "PO-Revision-Date: 2026-10-18 19:17+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -139,11 +139,11 @@ msgstr "Request too large"
 msgid "Retour au CV"
 msgstr "Back to the résumé"
 
+msgid "Scannez pour la version en ligne"
+msgstr "Scan for the online version"
+
 msgid "Secrets"
 msgstr "Secrets"
-
-msgid "Soft skills"
-msgstr "Soft skills"
 
 msgid "Sombre"
 msgstr "Dark"

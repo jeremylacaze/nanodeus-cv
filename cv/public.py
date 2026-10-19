@@ -78,8 +78,8 @@ def version_pdf(slug):
     if vue is None:
         abort(404)
     config = current_app.config["CV"]
-    contenu, etag = pdf_en_cache(config.DOSSIER_CACHE_PDF,
-                                 html_pdf(vue, config, lire_photo(g.db, config)))
+    contenu, etag, _pages = pdf_en_cache(config.DOSSIER_CACHE_PDF,
+                                         html_pdf(vue, config, lire_photo(g.db, config)))
     reponse = make_response(contenu)
     reponse.mimetype = "application/pdf"
     reponse.set_etag(etag)

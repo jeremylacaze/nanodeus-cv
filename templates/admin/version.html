@@ -42,6 +42,11 @@
           <a class="bouton bouton--secondaire" href="/admin/versions/{{ version.id }}/cv.pdf?complet=1">FR</a>
           <a class="bouton bouton--secondaire" href="/admin/versions/{{ version.id }}/cv.pdf?lang=en&amp;complet=1">EN</a>
         </div>
+        {% set debordent = pages_pdf | dictsort | selectattr(1, "gt", 1) | list %}
+        {% for lang, pages in debordent %}
+        <p class="message alerte">Le PDF {{ lang | upper }} fait {{ pages }} pages : en France, un CV
+          tient sur une seule. Allégez cette version (missions, compétences…).</p>
+        {% endfor %}
         <p class="aide">Le PDF complet ajoute le téléphone et l'email : ne le partagez qu'en direct.</p>
       </section>
 
