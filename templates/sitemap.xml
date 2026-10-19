@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+{%- for chemin in chemins %}
+{%- set fr = racine ~ chemin %}
+{%- set en = racine ~ "/en" ~ chemin %}
+{%- for loc in (fr, en) %}
+  <url>
+    <loc>{{ loc }}</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="{{ fr }}"/>
+    <xhtml:link rel="alternate" hreflang="en" href="{{ en }}"/>
+  </url>
+{%- endfor %}
+{%- endfor %}
+</urlset>
