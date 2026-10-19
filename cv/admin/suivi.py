@@ -86,6 +86,18 @@ def totaux(session, filtres: Filtres) -> Totaux:
                   [(s, n) for s, n in par_source], apercus)
 
 
+def serie_jours(du: date, au: date, valeurs: list[tuple[date, int]],
+                borne: int | None = None) -> list[tuple[date, int]]:
+    """Un point par jour de `du` à `au` inclus (0 si absent), du plus ancien au plus
+    récent. `borne` garde les derniers jours seulement : un graphique d'un an resterait
+    illisible."""
+    if borne is not None:
+        du = max(du, au - timedelta(days=borne - 1))
+    connus = dict(valeurs)
+    return [(j, connus.get(j, 0)) for j in (du + timedelta(days=i)
+                                           for i in range((au - du).days + 1))]
+
+
 def valeurs_presentes(session) -> tuple[list[str], list[str]]:
     """Slugs et sources déjà vus, pour les listes déroulantes des filtres."""
     return tuple(list(session.scalars(select(colonne).distinct().order_by(colonne)))

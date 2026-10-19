@@ -1,10 +1,72 @@
 {% extends "admin/base.html" %}
-{% block titre %}Accueil{% endblock %}
+{% from "admin/_graphiques.html" import histogramme %}
+{% block titre %}Tableau de bord{% endblock %}
 {% block contenu %}
-  <h1>Accueil</h1>
+  <header class="entete-page">
+    <h1>Tableau de bord</h1>
+  </header>
+
   <ul class="compteurs">
-    <li><a href="/admin/demandes"><strong>{{ demandes }}</strong> demande(s) non envoyée(s)</a></li>
-    <li><a href="/admin/visites"><strong>{{ visites }}</strong> visite(s) sur 7 jours</a></li>
-    <li><a href="/admin/stock/soft-skills"><strong>{{ a_completer }}</strong> soft skill(s) à compléter</a></li>
+    <li><a href="/admin/demandes"{% if demandes %} class="a-traiter"{% endif %}>
+      <strong>{{ demandes }}</strong><span>demande(s) non envoyée(s)</span></a></li>
+    <li><a href="/admin/visites"><strong>{{ visites }}</strong><span>visite(s) sur 7 jours</span></a></li>
+    <li><a href="/admin/stock/soft-skills"{% if a_completer %} class="a-traiter"{% endif %}>
+      <strong>{{ a_completer }}</strong><span>soft skill(s) à compléter</span></a></li>
   </ul>
+
+  <div class="grille">
+    <section class="carte">
+      <header class="carte__entete">
+        <h2>Visiteurs uniques</h2>
+        <a href="/admin/visites">Toutes les visites →</a>
+      </header>
+      <p class="muted">{{ serie | length }} derniers jours, aperçus LinkedIn exclus.</p>
+      {{ histogramme(serie) }}
+    </section>
+
+    <section class="carte">
+      <header class="carte__entete">
+        <h2>Dernières demandes</h2>
+        <a href="/admin/demandes">Toutes →</a>
+      </header>
+      {% if dernieres %}
+      <ul class="liste">
+        {% for d in dernieres %}
+        <li class="liste__ligne">
+          <div>
+            <strong>{{ d.nom or d.email }}</strong>{% if d.entreprise %} <span class="muted">· {{ d.entreprise }}</span>{% endif %}
+            <div class="muted petit">{{ d.cree_le.strftime("%d/%m/%Y %H:%M") }} · {{ d.version_slug }} ({{ d.langue }})</div>
+          </div>
+          <span class="badge badge--{{ d.statut }}">{{ d.statut | libelle }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="vide">Aucune demande pour l'instant.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  <section class="carte">
+    <header class="carte__entete">
+      <h2>Versions</h2>
+      <a href="/admin/versions">Gérer →</a>
+    </header>
+    <ul class="liste">
+      {% for v in versions %}
+      <li class="liste__ligne">
+        <div>
+          <a class="liste__titre" href="/admin/versions/{{ v.id }}">{{ v.slug }}</a>
+          <span class="badge badge--{{ v.statut }}">{{ v.statut | libelle }}</span>
+          {% if v.par_defaut %}<span class="badge badge--defaut">par défaut</span>{% endif %}
+          <div class="muted petit">{{ v.titre_fr }}</div>
+        </div>
+        <div class="boutons">
+          <a class="bouton bouton--discret" href="/admin/versions/{{ v.id }}/apercu">Aperçu FR</a>
+          <a class="bouton bouton--discret" href="/admin/versions/{{ v.id }}/apercu?lang=en">EN</a>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
 {% endblock %}

@@ -1,8 +1,6 @@
-{# Rend une liste de Champ (cv/admin/formulaires.py) avec valeurs et erreurs. #}
-{% macro champs(liste, valeurs, erreurs) %}
-{% for c in liste %}
-  {% set v = valeurs.get(c.nom) %}
-  {% set e = erreurs.get(c.nom) %}
+{# Rend une liste de Champ (cv/admin/formulaires.py) avec valeurs et erreurs.
+   Un champ `x_fr` suivi de son `x_en` est rendu en paire, côte à côte sur grand écran. #}
+{% macro champ(c, v, e) %}
   {% set id = "champ-" ~ c.nom %}
   {% if c.type == "case" %}
   <div class="champ champ--case">
@@ -12,12 +10,12 @@
   </div>
   {% else %}
   <div class="champ">
-    <label for="{{ id }}">{{ c.libelle }}{% if c.requis %} *{% endif %}</label>
+    <label for="{{ id }}">{{ c.libelle }}{% if c.requis %} <span class="requis" aria-hidden="true">*</span>{% endif %}</label>
     {% if c.type == "texte" %}
     <textarea id="{{ id }}" name="{{ c.nom }}" maxlength="{{ c.max }}"{% if e %} aria-invalid="true"{% endif %}>{{ v if v is not none else "" }}</textarea>
     {% elif c.type == "choix" %}
     <select id="{{ id }}" name="{{ c.nom }}"{% if e %} aria-invalid="true"{% endif %}>
-      {% for option in c.choix %}<option value="{{ option }}"{% if option == v %} selected{% endif %}>{{ option }}</option>{% endfor %}
+      {% for option in c.choix %}<option value="{{ option }}"{% if option == v %} selected{% endif %}>{{ option | libelle }}</option>{% endfor %}
     </select>
     {% else %}
     <input id="{{ id }}" name="{{ c.nom }}"
@@ -28,5 +26,18 @@
     {% if e %}<span class="erreur-champ">{{ e }}</span>{% endif %}
   </div>
   {% endif %}
+{% endmacro %}
+
+{% macro champs(liste, valeurs, erreurs) %}
+<div class="champs">
+{% for c in liste %}
+  {% set suivant = loop.nextitem %}
+  {% set precedent = loop.previtem %}
+  {% set ouvre = c.nom.endswith("_fr") and suivant and suivant.nom == c.nom[:-3] ~ "_en" %}
+  {% set ferme = c.nom.endswith("_en") and precedent and precedent.nom == c.nom[:-3] ~ "_fr" %}
+  {% if ouvre %}<div class="paire">{% endif %}
+  {{ champ(c, valeurs.get(c.nom), erreurs.get(c.nom)) }}
+  {% if ferme %}</div>{% endif %}
 {% endfor %}
+</div>
 {% endmacro %}

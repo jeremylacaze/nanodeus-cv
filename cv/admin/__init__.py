@@ -5,7 +5,9 @@ porte `?ok=<code>`, et seul le texte fixe de `MESSAGES` est affiché.
 """
 from pathlib import Path
 
-from flask import Blueprint, request
+from flask import Blueprint, current_app, request
+
+from cv.admin.libelles import libelle
 
 RACINE = Path(__file__).resolve().parent.parent.parent
 
@@ -29,9 +31,13 @@ MESSAGES = {
 }
 
 
+bp.add_app_template_filter(libelle, "libelle")
+
+
 @bp.context_processor
-def _message_ok():
-    return {"message_ok": MESSAGES.get(request.args.get("ok", ""))}
+def _contexte():
+    return {"message_ok": MESSAGES.get(request.args.get("ok", "")),
+            "url_site": current_app.config["CV"].URL_SITE}
 
 
 from cv.admin import vues_contenu, vues_suivi  # noqa: E402,F401

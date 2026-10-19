@@ -1,19 +1,26 @@
 {% extends "admin/base.html" %}
 {% block titre %}{{ t.titre }}{% endblock %}
 {% block contenu %}
-  <h1>{{ t.titre }}</h1>
-  <div class="actions"><a href="/admin/stock/{{ t.cle }}/nouveau">Ajouter</a></div>
+  <header class="entete-page">
+    <div>
+      <h1>{{ t.titre }}</h1>
+      <p class="muted">{{ elements | length }} élément(s) dans le stock, cochés ensuite version par version.</p>
+    </div>
+    <a class="bouton" href="/admin/stock/{{ t.cle }}/nouveau">Ajouter</a>
+  </header>
   {% if elements %}
-  <div class="cadre">
-    <table>
-      <tbody>
-      {% for e in elements %}
-        <tr><td><a href="/admin/stock/{{ t.cle }}/{{ e.id }}">{{ t.libelle(e) }}</a></td></tr>
-      {% endfor %}
-      </tbody>
-    </table>
-  </div>
+  <ul class="liste liste--cadre">
+    {% for e in elements %}
+    <li><a class="liste__lien" href="/admin/stock/{{ t.cle }}/{{ e.id }}">
+      <span>
+        <span class="liste__titre">{{ t.libelle(e) }}</span>
+        {% if t.detail %}<span class="muted petit bloc">{{ t.detail(e) }}</span>{% endif %}
+      </span>
+      <span class="chevron" aria-hidden="true">›</span>
+    </a></li>
+    {% endfor %}
+  </ul>
   {% else %}
-  <p class="muted">Aucun élément.</p>
+  <p class="vide">Le stock est vide : <a href="/admin/stock/{{ t.cle }}/nouveau">ajoutez un premier élément</a>.</p>
   {% endif %}
 {% endblock %}
