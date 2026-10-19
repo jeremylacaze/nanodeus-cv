@@ -6,25 +6,58 @@
   <meta name="robots" content="noindex">
   <title>{% block titre %}{% endblock %} · Admin CV</title>
   <link rel="stylesheet" href="{{ url_for('admin.static', filename='admin.css') }}">
+  {#- Sans defer : le thème choisi est posé avant le premier affichage (même script que le site). #}
+  <script src="{{ url_for('static', filename='theme.js') }}" nonce="{{ csp_nonce }}"></script>
   <script src="{{ url_for('admin.static', filename='admin.js') }}" nonce="{{ csp_nonce }}" defer></script>
 </head>
 <body>
-  <header class="entete">
-    <a class="marque" href="/admin/">Admin CV</a>
-    <nav class="nav" aria-label="Sections">
-      <a href="/admin/profil">Profil</a>
-      <a href="/admin/stock/parcours">Parcours</a>
-      <a href="/admin/stock/soft-skills">Soft skills</a>
-      <a href="/admin/stock/competences">Compétences</a>
-      <a href="/admin/stock/chiffres">Chiffres</a>
-      <a href="/admin/versions">Versions</a>
-      <a href="/admin/demandes">Demandes</a>
-      <a href="/admin/visites">Visites</a>
-    </nav>
-  </header>
-  <main class="page">
-    {% if message_ok %}<p class="message" role="status">{{ message_ok }}</p>{% endif %}
-    {% block contenu %}{% endblock %}
-  </main>
+{#- Lien de navigation ; actif sur sa page et ses sous-pages (l'accueil : sur lui seul). #}
+{% macro lien(href, texte) %}
+  {%- set actif = request.path == href if href == "/admin/" else
+                  (request.path == href or request.path.startswith(href ~ "/")) -%}
+  <a href="{{ href }}"{% if actif %} aria-current="page"{% endif %}>{{ texte }}</a>
+{%- endmacro %}
+  <div class="coque">
+    <aside class="lateral">
+      <a class="marque" href="/admin/"><span class="marque__point" aria-hidden="true"></span>Admin CV</a>
+      <nav class="nav" aria-label="Sections">
+        <div class="nav__groupe">
+          {{ lien("/admin/", "Tableau de bord") }}
+        </div>
+        <div class="nav__groupe">
+          <span class="nav__titre">Contenu</span>
+          {{ lien("/admin/profil", "Profil") }}
+          {{ lien("/admin/stock/parcours", "Parcours") }}
+          {{ lien("/admin/stock/soft-skills", "Soft skills") }}
+          {{ lien("/admin/stock/competences", "Compétences") }}
+          {{ lien("/admin/stock/chiffres", "Chiffres") }}
+        </div>
+        <div class="nav__groupe">
+          <span class="nav__titre">Diffusion</span>
+          {{ lien("/admin/versions", "Versions") }}
+        </div>
+        <div class="nav__groupe">
+          <span class="nav__titre">Suivi</span>
+          {{ lien("/admin/demandes", "Demandes") }}
+          {{ lien("/admin/visites", "Visites") }}
+        </div>
+      </nav>
+      <div class="lateral__pied">
+        <a class="externe" href="{{ url_site }}/" rel="noopener" target="_blank">Site public ↗</a>
+        <div class="theme" hidden>
+          <select data-action="theme" aria-label="Thème">
+            <option value="systeme">Système</option>
+            <option value="sombre">Sombre</option>
+            <option value="clair">Clair</option>
+            <option value="beige">Beige</option>
+          </select>
+        </div>
+      </div>
+    </aside>
+    <main class="page">
+      {% if message_ok %}<p class="message" role="status">{{ message_ok }}</p>{% endif %}
+      {% block contenu %}{% endblock %}
+    </main>
+  </div>
 </body>
 </html>

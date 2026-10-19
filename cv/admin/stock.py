@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from sqlalchemy import delete
 
 from cv.admin.formulaires import MAX_TEXTE, Champ
+from cv.admin.libelles import libelle
 from cv.models import (TYPES_ENTREE, VOIES, Chiffre, Competence, Entree, SoftSkill,
                        VersionElement)
 
@@ -23,6 +24,7 @@ class TypeStock:
     libelle: Callable[[object], str]
     tri: tuple
     verifier: Callable[[dict], dict[str, str]] | None = None
+    detail: Callable[[object], str] | None = None  # sous-titre dans la liste
 
 
 def _dates_dans_l_ordre(valeurs: dict) -> dict[str, str]:
@@ -34,6 +36,11 @@ def _dates_dans_l_ordre(valeurs: dict) -> dict[str, str]:
 
 def _libelle_entree(e: Entree) -> str:
     return " · ".join(filter(None, (e.intitule_fr, e.organisation)))
+
+
+def _detail_entree(e: Entree) -> str:
+    fin = e.fin.strftime("%m/%Y") if e.fin else "en cours"
+    return f"{libelle(e.type)} · {e.debut:%m/%Y} – {fin}"
 
 
 def _libelle_soft_skill(s: SoftSkill) -> str:
@@ -63,7 +70,8 @@ TYPES = {t.cle: t for t in (
          Champ("technos", "Technos", max=400),
          Champ("missions_fr", "Missions (FR)", type="texte", max=MAX_TEXTE, aide=UNE_PAR_LIGNE),
          Champ("missions_en", "Missions (EN)", type="texte", max=MAX_TEXTE, aide=UNE_PAR_LIGNE)),
-        _libelle_entree, (Entree.debut.desc(), Entree.id.desc()), _dates_dans_l_ordre),
+        _libelle_entree, (Entree.debut.desc(), Entree.id.desc()), _dates_dans_l_ordre,
+        _detail_entree),
     TypeStock(
         "soft-skills", "Soft skills", SoftSkill, "soft_skill",
         (Champ("nom_fr", "Nom (FR)", max=120, requis=True),

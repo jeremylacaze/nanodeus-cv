@@ -2,17 +2,27 @@
 {% from "admin/_champs.html" import champs %}
 {% block titre %}{{ t.titre }}{% endblock %}
 {% block contenu %}
-  <p><a href="/admin/stock/{{ t.cle }}">← {{ t.titre }}</a></p>
-  <h1>{% if obj %}{{ t.libelle(obj) }}{% else %}Nouvel élément{% endif %}</h1>
+  <header class="entete-page">
+    <div>
+      <a class="fil" href="/admin/stock/{{ t.cle }}">← {{ t.titre }}</a>
+      <h1>{% if obj %}{{ t.libelle(obj) }}{% else %}Nouvel élément{% endif %}</h1>
+    </div>
+  </header>
   {% if erreurs %}<p class="message alerte" role="alert">Le formulaire contient des erreurs : rien n'a été enregistré.</p>{% endif %}
-  <form method="post" action="/admin/stock/{{ t.cle }}/{{ obj.id if obj else 'nouveau' }}">
+  <form method="post" action="/admin/stock/{{ t.cle }}/{{ obj.id if obj else 'nouveau' }}" class="carte">
     {{ champs(t.champs, valeurs, erreurs) }}
-    <div class="actions"><button type="submit">Enregistrer</button></div>
+    <div class="barre-actions"><button type="submit">Enregistrer</button></div>
   </form>
   {% if obj %}
-  <form method="post" action="/admin/stock/{{ t.cle }}/{{ obj.id }}/supprimer"
-        data-confirmer="Supprimer aussi de toutes les versions ?">
-    <div class="actions"><button type="submit" class="danger">Supprimer</button></div>
-  </form>
+  <section class="zone-danger">
+    <div>
+      <h2>Supprimer</h2>
+      <p class="muted">L'élément disparaît aussi de toutes les versions qui le cochent.</p>
+    </div>
+    <form method="post" action="/admin/stock/{{ t.cle }}/{{ obj.id }}/supprimer"
+          data-confirmer="Supprimer aussi de toutes les versions ?">
+      <button type="submit" class="danger">Supprimer</button>
+    </form>
+  </section>
   {% endif %}
 {% endblock %}

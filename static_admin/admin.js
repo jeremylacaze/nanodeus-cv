@@ -31,3 +31,16 @@ window.addEventListener("pageshow", (evenement) => {
     }
   }
 });
+
+// Composition d'une version : le compteur « cochées / total » de chaque bloc
+// suit les cases au fil des clics (le serveur rend la valeur de départ).
+document.addEventListener("change", (evenement) => {
+  const caseACocher = evenement.target;
+  if (!(caseACocher instanceof HTMLInputElement) || caseACocher.type !== "checkbox") return;
+  const bloc = caseACocher.closest("fieldset");
+  const compteur = bloc && bloc.querySelector("[data-compte]");
+  if (!compteur) return;
+  const cases = bloc.querySelectorAll("input[type=checkbox]");
+  const cochees = bloc.querySelectorAll("input[type=checkbox]:checked");
+  compteur.textContent = `${cochees.length} / ${cases.length}`;
+});

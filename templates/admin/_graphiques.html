@@ -1,0 +1,30 @@
+{# Graphiques en SVG rendu côté serveur : les tailles passent par des attributs SVG,
+   jamais par style= (CSP style-src 'self'). #}
+
+{# Histogramme d'une série [(date, n)] : une barre par jour, du plus ancien au plus récent. #}
+{% macro histogramme(serie, unite="visiteur(s)") %}
+{% set maxi = serie | map(attribute=1) | max if serie else 0 %}
+<figure class="graphique">
+  <svg class="histogramme" viewBox="0 0 {{ serie | length * 10 }} 100" preserveAspectRatio="none"
+       role="img" aria-label="{{ unite | capitalize }} par jour, du {{ serie[0][0].strftime('%d/%m') }} au {{ serie[-1][0].strftime('%d/%m') }} ; au plus {{ maxi }}">
+    {% for jour, n in serie %}
+    {% set h = (n / maxi * 96) | round(1) if maxi else 0 %}
+    <rect class="{{ 'barre' if n else 'barre barre--zero' }}" x="{{ loop.index0 * 10 + 1 }}" width="8"
+          y="{{ 100 - (h if n else 2) }}" height="{{ h if n else 2 }}"><title>{{ jour.strftime("%d/%m") }} : {{ n }} {{ unite }}</title></rect>
+    {% endfor %}
+  </svg>
+  <figcaption class="graphique__axe">
+    <span>{{ serie[0][0].strftime("%d/%m") }}</span>
+    <span>au plus {{ maxi }} par jour</span>
+    <span>{{ serie[-1][0].strftime("%d/%m") }}</span>
+  </figcaption>
+</figure>
+{% endmacro %}
+
+{# Jauge horizontale : `n` rapporté à `total`. #}
+{% macro jauge(n, total) %}
+<svg class="jauge" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true">
+  <rect class="jauge__fond" width="100" height="6"/>
+  <rect class="jauge__valeur" width="{{ (n / total * 100) | round(1) if total else 0 }}" height="6"/>
+</svg>
+{% endmacro %}

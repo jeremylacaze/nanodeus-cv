@@ -5,19 +5,29 @@ from flask import current_app, g, render_template, request
 from sqlalchemy import func, or_, select
 
 from cv.admin import bp
-from cv.admin.suivi import lire_filtres, totaux, valeurs_presentes, visites
+from cv.admin.suivi import Filtres, lire_filtres, serie_jours, totaux, valeurs_presentes, visites
 from cv.admin.vues_contenu import ok, trouver
 from cv.contact import envoyer_demande, message_de_test, renvoyable
 from cv.journal import maintenant_utc
-from cv.models import TYPES_VISITE, DemandeContact, SoftSkill, Visite
+from cv.models import TYPES_VISITE, DemandeContact, SoftSkill, Version, Visite
+
+JOURS_ACCUEIL = 14
+BORNE_GRAPHIQUE = 90  # jours au plus dans l'histogramme de la page Visites
 
 
 @bp.get("/")
 def accueil():
     db = g.db
     compte = lambda requete: db.scalar(select(func.count()).select_from(requete))  # noqa: E731
+    aujourd_hui = maintenant_utc().date()
+    periode = Filtres(aujourd_hui - timedelta(days=JOURS_ACCUEIL - 1), aujourd_hui, "", "", "")
     return render_template(
         "admin/accueil.html",
+        versions=db.scalars(select(Version).order_by(Version.par_defaut.desc(),
+                                                     Version.slug)).all(),
+        dernieres=db.scalars(select(DemandeContact).order_by(
+            DemandeContact.cree_le.desc(), DemandeContact.id.desc()).limit(3)).all(),
+        serie=serie_jours(periode.du, periode.au, totaux(db, periode).uniques_par_jour),
         demandes=compte(select(DemandeContact).where(DemandeContact.statut != "envoyee")
                         .subquery()),
         visites=compte(select(Visite).where(
@@ -82,6 +92,9 @@ def page_visites():
     filtres = lire_filtres(request.args, maintenant_utc().date())
     liste = visites(g.db, filtres, LIMITE_VISITES)
     versions, sources = valeurs_presentes(g.db)
+    chiffres = totaux(g.db, filtres)
     return render_template("admin/visites.html", filtres=filtres, visites=liste,
-                           totaux=totaux(g.db, filtres), versions=versions, sources=sources,
+                           totaux=chiffres, versions=versions, sources=sources,
+                           serie=serie_jours(filtres.du, filtres.au, chiffres.uniques_par_jour,
+                                             borne=BORNE_GRAPHIQUE),
                            types=TYPES_VISITE, tronque=len(liste) == LIMITE_VISITES)
