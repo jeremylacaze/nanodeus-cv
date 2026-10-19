@@ -1,0 +1,22 @@
+# Vérifications à chaque push sur develop et sur chaque pull request. Le dépôt
+# est public : les minutes d'Actions sont illimitées, tout est vérifié à chaque
+# fois. Le détail des contrôles vit dans verifications.yml, partagé avec la release.
+name: CI
+
+on:
+  push:
+    branches: [develop]
+  pull_request:
+  workflow_dispatch:
+
+# Un nouveau push sur la même ref rend le run précédent caduc.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verifications:
+    uses: $/.github/workflows/verifications.yml

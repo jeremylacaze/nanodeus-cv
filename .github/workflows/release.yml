@@ -1,0 +1,132 @@
+# Mise en ligne de cv.nanodeus.com sur le serveur, sur tag `v*`. Quatre étapes,
+# chacune bloquante : vérifications, image, sauvegarde, déploiement.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+# Un seul déploiement à la fois : deux runs simultanés réécriraient tous deux le
+# .env du serveur. On n'interrompt jamais un déploiement à mi-course (migration
+# en vol) : le suivant attend.
+concurrency:
+  group: release-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  # Tag par SHA de commit, jamais `latest` : le retour arrière ramène réellement
+  # l'image précédente. deploy.sh refuse tout autre tag.
+  IMAGE: ghcr.io/jeremylacaze/nanodeus-cv
+
+jobs:
+  # 1. Mêmes vérifications que la CI, sans cache pip : l'image de production ne
+  #    dépend d'aucun cache écrit par une autre branche.
+  verifications:
+    uses: $/.github/workflows/verifications.yml
+    with:
+      cache-pip: false
+
+  # 2. Build et push vers GHCR, seul job qui publie quoi que ce soit.
+  build:
+    needs: verifications
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Connexion à GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          # Jeton fourni par Actions : aucun secret à gérer.
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Sans cache de build, comme la vérification : rien d'écrit par une autre
+      # branche n'entre dans l'image de production.
+      - name: Build et push
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          push: true
+          tags: ${{ env.IMAGE }}:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+
+  # 3. Sauvegarde de la base avant la bascule — étape bloquante : si elle
+  #    échoue, le déploiement n'a pas lieu. La clé n'ouvre que deux commandes
+  #    (deploy/ssh-commande.sh, commande forcée côté serveur).
+  backup:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    # Ce job ne parle qu'au serveur : aucune permission sur le dépôt.
+    permissions: {}
+    steps:
+      - name: Préparer l'accès SSH
+        env:
+          NETCUP_SSH_KEY: ${{ secrets.NETCUP_SSH_KEY }}
+          NETCUP_KNOWN_HOSTS: ${{ secrets.NETCUP_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$NETCUP_SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          # Clés d'hôte épinglées : jamais StrictHostKeyChecking=no, qui
+          # accepterait un homme du milieu.
+          printf '%s\n' "$NETCUP_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      # ServerAliveInterval : une connexion réellement morte tombe au lieu de
+      # laisser le job pendu jusqu'à son délai.
+      - name: Sauvegarde avant déploiement
+        env:
+          NETCUP_USER: ${{ secrets.NETCUP_USER }}
+          NETCUP_HOST: ${{ secrets.NETCUP_HOST }}
+        run: |
+          ssh -i ~/.ssh/id_deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o ServerAliveInterval=30 -o ServerAliveCountMax=10 \
+            "$NETCUP_USER@$NETCUP_HOST" \
+            /opt/nanodeus-cv/backup.sh --db-only
+
+  # 4. Déploiement. deploy.sh attend au plus 5 minutes que public soit sain.
+  deploy:
+    needs: backup
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    permissions: {}
+    steps:
+      - name: Préparer l'accès SSH
+        env:
+          NETCUP_SSH_KEY: ${{ secrets.NETCUP_SSH_KEY }}
+          NETCUP_KNOWN_HOSTS: ${{ secrets.NETCUP_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$NETCUP_SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          printf '%s\n' "$NETCUP_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      # L'image passe par l'environnement : interpolée dans `run`, elle
+      # deviendrait du shell.
+      - name: Bascule sur la nouvelle image
+        env:
+          NETCUP_USER: ${{ secrets.NETCUP_USER }}
+          NETCUP_HOST: ${{ secrets.NETCUP_HOST }}
+          DEPLOY_IMAGE: ${{ env.IMAGE }}:${{ github.sha }}
+        run: |
+          ssh -i ~/.ssh/id_deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o ServerAliveInterval=30 -o ServerAliveCountMax=10 \
+            "$NETCUP_USER@$NETCUP_HOST" \
+            "/opt/nanodeus-cv/deploy.sh $DEPLOY_IMAGE"

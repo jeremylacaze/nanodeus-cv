@@ -1,0 +1,40 @@
+# Mises à jour des dépendances, proposées en PR vers develop. Les correctifs de
+# sécurité (alertes Dependabot) arrivent sans délai ; les montées de version
+# ci-dessous attendent `cooldown` : une version piégée est en général retirée
+# dans les jours qui suivent sa publication.
+#
+# Image Docker absente : passer de python:3.14 à 3.15 se décide avec la CI.
+version: 2
+
+updates:
+  # requirements.txt, requirements-dev.txt et requirements-ci.txt.
+  - package-ecosystem: pip
+    directory: /
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: CHORE
+      include: scope
+    groups:
+      python:
+        update-types: [minor, patch]
+
+  # SHA épinglés dans .github/workflows (et le commentaire `# vX.Y.Z` qui suit).
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: CHORE
+      include: scope
+    groups:
+      actions:
+        update-types: [minor, patch]
