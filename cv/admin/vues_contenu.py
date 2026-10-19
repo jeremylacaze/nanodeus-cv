@@ -190,6 +190,26 @@ def versions():
     return render_template("admin/versions.html", versions=liste)
 
 
+def _pages_pdf(version: Version) -> dict[str, int]:
+    """Nombre de pages du PDF public, par langue. Rendu par le cache des PDF : une
+    page d'admin ne recalcule rien tant que le contenu ne change pas."""
+    config = current_app.config["CV"]
+    photo = lire_photo(g.db, config)
+    langue = g.get("lang", "fr")
+    pages = {}
+    try:
+        for lang in ("fr", "en"):
+            g.lang = lang
+            flask_babel.refresh()  # les titres du PDF suivent sa langue
+            vue = assembler_vue(g.db, version.slug, lang, apercu=True)
+            pages[lang] = pdf_en_cache(config.DOSSIER_CACHE_PDF,
+                                       html_pdf(vue, config, photo))[2]
+    finally:
+        g.lang = langue
+        flask_babel.refresh()
+    return pages
+
+
 def _page_version(version: Version | None, valeurs: dict, erreurs: dict,
                   composition: dict | None = None, erreurs_composition: dict | None = None,
                   statut: int = 200):
@@ -200,6 +220,7 @@ def _page_version(version: Version | None, valeurs: dict, erreurs: dict,
                for lang in ("fr", "en")} if version else {}
     return render_template(
         "admin/version.html", version=version, champs_version=CHAMPS_VERSION, urls_qr=urls_qr,
+        pages_pdf=_pages_pdf(version) if version else {},
         valeurs=valeurs, erreurs=erreurs, lignes=lignes, composition=composition,
         erreurs_composition=erreurs_composition or {}, titres={
             te: t.titre for te, t in PAR_ELEMENT.items()}), statut

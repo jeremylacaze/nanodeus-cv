@@ -1,39 +1,75 @@
-/* Feuille du PDF (WeasyPrint) : noir sur blanc, lisible imprimée en niveaux de gris. */
-@page { size: A4; margin: 14mm 14mm 16mm; }
-html { font-family: "DejaVu Sans", "Helvetica Neue", Arial, sans-serif; font-size: 9pt;
-       line-height: 1.3; color: #000; }
+/* Feuille du PDF (WeasyPrint) : le thème clair de la page web, sur une page A4.
+   Cartes gris très clair à bord fin, ✓ verts, ● en cours, détails façon log.
+   Imprimé en niveaux de gris, les cartes restent visibles et le texte noir. */
+@page { size: A4; margin: 11mm 12mm 10mm; }
+html { font-family: "DejaVu Sans", "Helvetica Neue", Arial, sans-serif; font-size: 8.8pt;
+       line-height: 1.32; color: #1f2328; }
 body { margin: 0; }
-p, ul, dl, h1, h2 { margin: 0; }
-.mono { font-family: "DejaVu Sans Mono", Menlo, monospace; font-size: 8pt; }
+p, ul, ol, dl, dd, h1, h2 { margin: 0; }
+ul, ol { list-style: none; padding: 0; }
+a { color: inherit; text-decoration: none; }
+.mono { font-family: "DejaVu Sans Mono", Menlo, monospace; font-size: 7.6pt; }
+.muted { color: #59636e; }
 .ok { color: #1a7f37; }
+.run { color: #9a6700; }
+.carte { background: #f6f8fa; border: 0.25mm solid #d0d7de; border-radius: 1.5mm; }
 
-.entete { display: flex; gap: 5mm; align-items: center; }
-.photo { width: 22mm; height: 22mm; border-radius: 50%; flex: none; object-fit: cover;
-         border: 0.5mm solid #1a7f37; background: #eee; display: flex;
-         align-items: center; justify-content: center; font-weight: bold; font-size: 16pt; }
-h1 { font-size: 17pt; line-height: 1.15; }
-.titre { font-size: 11pt; font-weight: bold; color: #333; }
-.meta, .coordonnees { color: #555; margin-top: 1mm; }
-.accroche { margin-top: 3mm; font-style: italic; }
-.chiffres { list-style: none; padding: 0; margin-top: 2.5mm; display: flex; flex-wrap: wrap;
-            gap: 1.5mm 5mm; color: #444; }
+/* En-tête : identité au centre, QR code dans sa carte à droite */
+.entete { display: flex; gap: 4mm; align-items: center; }
+.photo { width: 21mm; height: 21mm; border-radius: 50%; flex: none; object-fit: cover;
+         border: 0.5mm solid #1a7f37; background: #eaeef2; display: flex;
+         align-items: center; justify-content: center; font-weight: bold; font-size: 15pt; }
+.identite { flex: 1; min-width: 0; }
+h1 { font-size: 16pt; line-height: 1.15; }
+.titre { font-size: 10pt; font-weight: bold; margin-top: 0.5mm; }
+.meta { margin-top: 0.8mm; }
+.accroche { margin-top: 1mm; font-style: italic; }
+.qr { flex: none; width: 27mm; padding: 1.5mm; text-align: center; }
+.qr__code { display: block; width: 22mm; height: 22mm; margin: 0 auto; background: #fff; }
+.qr__legende { display: block; margin-top: 0.8mm; font-size: 6pt; line-height: 1.2; }
 
-section { margin-top: 4mm; }
-h2 { font-size: 10.5pt; letter-spacing: 0.3pt; color: #333;
-     border-bottom: 0.3mm solid #999; padding-bottom: 0.8mm; margin-bottom: 1.5mm; }
-.job { break-inside: avoid; margin-bottom: 2mm; }
-.job__tete { display: flex; justify-content: space-between; gap: 4mm; }
-.job__nom { font-weight: bold; }
-.job__org { font-weight: normal; color: #444; }
-.job__quand { color: #555; white-space: nowrap; flex: none; }
-.job ul, .skills { margin-top: 0.6mm; padding-left: 4.5mm; }
-.skills { list-style: none; padding-left: 0; }
-.skills li { margin-bottom: 0.8mm; }
-.technos { color: #555; margin-top: 0.6mm; }
-.stack dl { display: grid; grid-template-columns: auto 1fr; gap: 0.8mm 4mm; }
-.stack dt { color: #555; }
+/* Chiffres clés */
+.chiffres { display: flex; gap: 2mm; margin-top: 3mm; }
+.chiffres li { flex: 1 1 0; padding: 1.2mm 2mm; }
+.chiffres b { display: block; font-size: 11pt; line-height: 1.2; }
 
-.pied { break-inside: avoid; margin-top: 5mm; display: flex; gap: 4mm; align-items: center;
-        border-top: 0.3mm solid #999; padding-top: 3mm; }
-.qr { width: 20mm; height: 20mm; flex: none; }
-.pied a { color: #000; }
+/* Titres de section façon GitHub */
+section { margin-top: 3.6mm; }
+h2 { font-size: 7.4pt; font-weight: bold; color: #59636e; text-transform: uppercase;
+     letter-spacing: 0.4pt; margin-bottom: 1.2mm; }
+
+/* Parcours : une ligne de jobs reliés, tous de même largeur ; un nom trop long
+   finit par « … » plutôt que de serrer les autres. */
+.graphe { display: flex; align-items: center; }
+.graphe .carte { flex: 1 1 0; min-width: 0; padding: 0.8mm 1.6mm; white-space: nowrap;
+                 font-size: 7.2pt; line-height: 1.25; }
+/* La dernière case, « Prochaine mission », ne doit pas être coupée. */
+.graphe .carte:last-child { flex-grow: 1.35; }
+.graphe__nom, .graphe__quand { display: block; overflow: hidden; text-overflow: ellipsis; }
+.graphe__quand { font-size: 6.6pt; }
+.lien { flex: none; width: 2.5mm; border-top: 0.35mm solid #d0d7de; }
+
+/* Deux colonnes : le parcours détaillé à gauche, le reste à droite */
+.colonnes { display: flex; gap: 4mm; align-items: flex-start; }
+.principale { flex: 1; min-width: 0; }
+.cote { flex: none; width: 64mm; }
+
+.log { break-inside: avoid; padding: 1.8mm 2.4mm; margin-bottom: 1.8mm; }
+.log__tete { display: flex; justify-content: space-between; gap: 3mm; }
+.log__nom { font-weight: bold; }
+.log__duree { white-space: nowrap; flex: none; }
+.log__meta { margin-top: 0.2mm; }
+.etapes { margin-top: 0.8mm; }
+.etapes li { padding-left: 3.2mm; text-indent: -3.2mm; margin-top: 0.3mm; }
+.technos { margin-top: 0.8mm; }
+
+.cote .carte { padding: 1.8mm 2.4mm; break-inside: avoid; }
+.formation + .formation { margin-top: 1.4mm; }
+.tests li + li { margin-top: 1mm; }
+.stack dt { margin-top: 1mm; }
+.stack dt:first-child { margin-top: 0; }
+
+/* Pied : coordonnées masquées (ou réelles, PDF complet) et adresse en ligne */
+.pied { break-inside: avoid; margin-top: 3mm; padding-top: 1.8mm;
+        border-top: 0.25mm solid #d0d7de; display: flex; justify-content: space-between;
+        gap: 4mm; }

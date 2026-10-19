@@ -49,10 +49,16 @@ def nom_fichier(vue, complet: bool = False) -> str:
     return "-".join(m for m in morceaux if m) + ".pdf"
 
 
+def rendu_pdf(html: str) -> tuple[bytes, int]:
+    """PDF et nombre de pages. Rien n'est cherché au-dehors : seules les URI data: sont
+    lues. Une ressource refusée est signalée par WeasyPrint sans faire échouer le rendu."""
+    document = HTML(string=html,
+                    url_fetcher=URLFetcher(allowed_protocols=("data",))).render()
+    return document.write_pdf(), len(document.pages)
+
+
 def rendre_pdf(html: str) -> bytes:
-    """Rien n'est cherché au-dehors : seules les URI data: sont lues. Une ressource
-    refusée est signalée par WeasyPrint sans faire échouer le rendu."""
-    return HTML(string=html, url_fetcher=URLFetcher(allowed_protocols=("data",))).write_pdf()
+    return rendu_pdf(html)[0]
 
 
 def _date(chemin: Path) -> int:
@@ -62,27 +68,28 @@ def _date(chemin: Path) -> int:
         return 0
 
 
-def pdf_en_cache(dossier: Path, html: str) -> tuple[bytes, str]:
-    """PDF de ce HTML, rendu une seule fois ; renvoie aussi son ETag."""
+def pdf_en_cache(dossier: Path, html: str) -> tuple[bytes, str, int]:
+    """PDF de ce HTML, rendu une seule fois ; renvoie aussi son ETag et son nombre de
+    pages, gardé dans le nom du fichier : <etag>-<pages>.pdf."""
     etag = hashlib.sha256(html.encode()).hexdigest()[:32]
-    chemin = dossier / f"{etag}.pdf"
-    try:
-        contenu = chemin.read_bytes()
-    except FileNotFoundError:
-        pass
-    else:
+    for chemin in dossier.glob(f"{etag}-*.pdf"):
+        try:
+            contenu = chemin.read_bytes()
+        except FileNotFoundError:  # élagué entre-temps par l'autre processus
+            break
         try:
             os.utime(chemin)  # récent : l'élagage le garde
         except FileNotFoundError:
             pass  # élagué entre-temps par l'autre processus : le contenu est déjà lu
-        return contenu, etag
-    contenu = rendre_pdf(html)
+        return contenu, etag, int(chemin.stem.rsplit("-", 1)[1])
+    contenu, pages = rendu_pdf(html)
+    chemin = dossier / f"{etag}-{pages}.pdf"
     ecrire_atomiquement(chemin, contenu)
     anciens = sorted(dossier.glob("*.pdf"), key=_date, reverse=True)[CACHE_MAX:]
     for ancien in anciens:
         if ancien != chemin:
             ancien.unlink(missing_ok=True)
-    return contenu, etag
+    return contenu, etag, pages
 
 
 def vider_cache(dossier: Path) -> None:
