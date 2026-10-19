@@ -1,0 +1,11 @@
+# Surcharge du test de fumée (scripts/fumee-image.sh) : projet et volume à part,
+# pour ne jamais toucher les données réelles, et public joignable en local.
+name: nanodeus-cv-fumee
+
+services:
+  public:
+    ports: ["127.0.0.1:18010:8000"]
+
+volumes:
+  donnees:
+    name: nanodeus-cv-fumee

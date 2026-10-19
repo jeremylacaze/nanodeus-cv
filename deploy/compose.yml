@@ -1,0 +1,70 @@
+# Production de cv.nanodeus.com : /opt/nanodeus-cv/compose.yml, à côté du .env
+# (chmod 600). Copié à la main par scp : la pipeline ne fait que changer CV_IMAGE
+# dans le .env et rejouer `up -d` (deploy.sh).
+name: nanodeus-cv
+
+# Réglages communs aux trois services : même image, même volume, conteneurs
+# en lecture seule et sans aucun privilège.
+x-commun: &commun
+  image: ${CV_IMAGE:?CV_IMAGE manquante dans .env}
+  env_file: .env
+  volumes: ["donnees:/data"]
+  read_only: true
+  tmpfs: ["/tmp"]
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: [ALL]
+  logging:
+    driver: json-file
+    options: {max-size: "10m", max-file: "3"}
+
+services:
+  # Schéma à jour et base amorcée (idempotent) avant que les deux rôles démarrent.
+  migrate:
+    <<: *commun
+    command: ["sh", "-c", "alembic upgrade head && flask --app cv.app amorcer"]
+    restart: "no"
+    network_mode: none
+
+  # Site public, derrière Traefik. TRUST_PROXY ici et jamais dans le .env : l'admin,
+  # qui lit le même .env, refuse de démarrer avec.
+  public:
+    <<: *commun
+    restart: unless-stopped
+    environment:
+      CV_ROLE: public
+      TRUST_PROXY: "1"
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    networks: [proxy]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/sante', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.nanodeus-cv.rule=Host(`cv.nanodeus.com`)
+      - traefik.http.routers.nanodeus-cv.entrypoints=websecure
+      - traefik.http.routers.nanodeus-cv.tls.certresolver=le
+      - traefik.http.services.nanodeus-cv.loadbalancer.server.port=8000
+
+  # Admin : jamais sur Internet. Son port n'est publié que sur l'IP tailnet
+  # (CV_ADMIN_ECOUTE=<ip-tailnet>:8780 dans le .env), sans aucune route Traefik.
+  admin:
+    <<: *commun
+    restart: unless-stopped
+    environment:
+      CV_ROLE: admin
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    ports: ["${CV_ADMIN_ECOUTE:?CV_ADMIN_ECOUTE manquante dans .env}:8000"]
+
+volumes:
+  donnees:
+    name: nanodeus-cv-donnees
+
+networks:
+  proxy:
+    external: true
