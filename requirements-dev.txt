@@ -1,6 +1,6 @@
 # Dépendances de développement et de test uniquement — jamais dans l'image.
 -r requirements.txt
 pytest==9.1.1
-ruff==0.16.10
+ruff==0.17.0
 pypdf==6.21.1
 shellcheck-py==0.11.0.1
