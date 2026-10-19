@@ -104,8 +104,13 @@ for _ in $(seq 60); do
   sleep 5
 done
 [ "$SAIN" -eq 1 ] || { echo "❌ public n'est pas devenu sain en 5 minutes." >&2; echec; }
-[ "$(etat_de admin '{{.State.Status}}')" = running ] \
-  || { echo "❌ admin ne tourne pas." >&2; echec; }
+# L'admin n'a pas de healthcheck : `running` peut tomber entre deux plantages.
+# Le compteur de redémarrages ne doit pas bouger pendant dix secondes.
+ADMIN_AVANT="$(etat_de admin '{{.State.Status}} {{.RestartCount}}')"
+sleep 10
+ADMIN_APRES="$(etat_de admin '{{.State.Status}} {{.RestartCount}}')"
+{ [ "${ADMIN_APRES%% *}" = running ] && [ "$ADMIN_APRES" = "$ADMIN_AVANT" ]; } \
+  || { echo "❌ admin ne tourne pas, ou redémarre en boucle." >&2; echec; }
 
 trap - ERR INT TERM HUP
 echo "✅ $IMAGE en ligne."

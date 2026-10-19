@@ -75,9 +75,31 @@ obtenir /admin/ 404
 for pdf in /devops.pdf /en/devops.pdf /lead-tech.pdf /en/lead-tech.pdf; do
     obtenir "$pdf" 200
     [ "$(head -c 4 "$TMP/corps")" = "%PDF" ] || echec "$pdf : ce n'est pas un PDF"
-    pages="$("$PYTHON" -c 'import sys, pypdf; print(len(pypdf.PdfReader(sys.argv[1]).pages))' \
-        "$TMP/corps")"
-    [ "$pages" = 1 ] || echec "$pdf : $pages pages au lieu d'une"
+    # Nombre de pages, puis les polices embarquées. WeasyPrint nomme une police
+    # d'après le style demandé : une face absente de l'image (l'oblique de
+    # fonts-dejavu-extra) serait synthétisée sous le même nom. Seule la table de
+    # noms du programme embarqué dit quelle face a réellement servi.
+    pages="$("$PYTHON" -c '
+import sys, pypdf
+lecteur = pypdf.PdfReader(sys.argv[1])
+fautes = []
+for page in lecteur.pages:
+    for police in (page["/Resources"].get("/Font") or {}).values():
+        police = police.get_object()
+        nom = str(police["/BaseFont"]).split("+")[-1]
+        desc = police["/DescendantFonts"][0].get_object() if "/DescendantFonts" in police else police
+        fd = desc["/FontDescriptor"].get_object()
+        programme = next(fd[c].get_object().get_data()
+                         for c in ("/FontFile2", "/FontFile3", "/FontFile") if c in fd)
+        if not nom.startswith("DejaVu"):
+            fautes.append(f"police de repli {nom}")
+        for face in ("Oblique", "Mono", "Bold"):
+            if face in nom and "\0".join(face).encode() not in programme:
+                fautes.append(f"{nom} synthétisée : face {face} absente de l image")
+print(len(lecteur.pages), *sorted(set(fautes)), sep="\n")' "$TMP/corps")"
+    [ "$(head -n 1 <<< "$pages")" = 1 ] || echec "$pdf : $(head -n 1 <<< "$pages") pages au lieu d'une"
+    fautes="$(tail -n +2 <<< "$pages")"
+    [ -z "$fautes" ] || echec "$pdf : $fautes"
 done
 
 dc exec -T admin python -c "

@@ -1,11 +1,14 @@
 # Image unique du CV : le rôle (public ou admin) vient de CV_ROLE, posé par Compose.
-FROM python:3.14-slim
+# Épinglée par digest : l'image publiée est celle que la fumée a validée, à la base
+# près. Dependabot propose les nouveaux digests de 3.14-slim (correctifs de sécurité).
+FROM python:3.14-slim@sha256:a2b82f3c48559aa0a8446d9af49826b6e2b2016f4cd2afabfe6013ec53729170
 
 # Pango et HarfBuzz pour WeasyPrint (importé au chargement du site public), et les
 # polices DejaVu nommées par templates/pdf.css : sans elles, le PDF changerait de
-# police, donc de mise en page.
+# police, donc de mise en page. fonts-dejavu-extra porte l'oblique de l'accroche,
+# que WeasyPrint synthétiserait sinon.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 fonts-dejavu-core \
+        libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 fonts-dejavu-core fonts-dejavu-extra \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

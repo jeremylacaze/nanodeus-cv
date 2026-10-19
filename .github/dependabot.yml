@@ -2,8 +2,6 @@
 # sécurité (alertes Dependabot) arrivent sans délai ; les montées de version
 # ci-dessous attendent `cooldown` : une version piégée est en général retirée
 # dans les jours qui suivent sa publication.
-#
-# Image Docker absente : passer de python:3.14 à 3.15 se décide avec la CI.
 version: 2
 
 updates:
@@ -38,3 +36,20 @@ updates:
     groups:
       actions:
         update-types: [minor, patch]
+
+  # Digest de python:3.14-slim dans le Dockerfile. Passer à 3.15 se décide à la
+  # main, avec la CI : seules les reconstructions de 3.14-slim sont proposées.
+  - package-ecosystem: docker
+    directory: /
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: CHORE
+      include: scope
+    ignore:
+      - dependency-name: python
+        update-types: [version-update:semver-major, version-update:semver-minor]

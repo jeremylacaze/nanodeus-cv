@@ -40,7 +40,7 @@ jobs:
       - name: Installer Pango et les polices
         run: >-
           sudo apt-get update -q && sudo apt-get install -y -q --no-install-recommends
-          libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 fonts-dejavu-core
+          libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 fonts-dejavu-core fonts-dejavu-extra
 
       - name: Installer les dépendances
         run: pip install -r requirements-dev.txt

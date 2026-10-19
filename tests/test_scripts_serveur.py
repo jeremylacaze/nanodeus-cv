@@ -13,7 +13,8 @@ IMAGE = "ghcr.io/jeremylacaze/nanodeus-cv:" + "a" * 40
 PRECEDENTE = "ghcr.io/jeremylacaze/nanodeus-cv:" + "b" * 40
 
 # Note ses arguments, répond `cid` à `ps -q`, `$FAUX_ETAT` à l'état de santé et
-# `running` à l'état du conteneur, une ligne de journal à `logs`. `volume inspect` échoue si FAUX_VOLUME est vide.
+# `running` à l'état du conteneur, une ligne de journal à `logs`. Le compteur de
+# redémarrages avance à chaque lecture si FAUX_REDEMARRE est posé. `volume inspect` échoue si FAUX_VOLUME est vide.
 FAUX_DOCKER = """#!/bin/sh
 printf '%s\\n' "$*" >> "$FAUX_JOURNAL"
 case "$*" in
@@ -21,6 +22,10 @@ case "$*" in
   *"ps -q"*) echo cid ;;
   *logs*) echo "trace avec visiteur@exemple.test" ;;
   *Health*) echo "$FAUX_ETAT" ;;
+  *RestartCount*)
+    n="$(cat "$FAUX_JOURNAL.rc" 2>/dev/null || echo 0)"
+    [ -z "$FAUX_REDEMARRE" ] || echo $((n + 1)) > "$FAUX_JOURNAL.rc"
+    echo "running $n" ;;
   *inspect*) echo running ;;
 esac
 exit 0
@@ -38,6 +43,7 @@ def serveur(tmp_path):
     bin_ = tmp_path / "bin"
     bin_.mkdir()
     _executable(bin_ / "docker", FAUX_DOCKER)
+    _executable(bin_ / "sleep", "#!/bin/sh\nexit 0\n")  # les attentes de deploy.sh
     racine = tmp_path / "racine"
     racine.mkdir()
     env_fichier = racine / ".env"
@@ -55,6 +61,7 @@ def serveur(tmp_path):
         "FAUX_JOURNAL": str(journal),
         "FAUX_ETAT": "healthy",
         "FAUX_VOLUME": "1",
+        "FAUX_REDEMARRE": "",
     }
     return {"racine": racine, "env": env, "journal": journal}
 
@@ -100,6 +107,20 @@ def test_deploy_reussi_garde_les_secrets(serveur):
     assert appels.index(f"pull {IMAGE}") < appels.index("up -d")
 
 
+def test_deploy_lecture_du_env_ratee_le_laisse_intact(serveur):
+    """grep rend 2 (lecture impossible) : le .env, seul dépositaire des secrets, ne doit
+    jamais être réduit à la ligne CV_IMAGE, ni rien démarrer."""
+    _executable(Path(serveur["env"]["PATH"].split(":")[0]) / "grep", "#!/bin/sh\nexit 2\n")
+    env_fichier = serveur["racine"] / ".env"
+    avant = env_fichier.read_text()
+    resultat = _lancer("deploy.sh", IMAGE, env=serveur["env"])
+    assert resultat.returncode != 0
+    assert env_fichier.read_text() == avant
+    assert stat.S_IMODE(env_fichier.stat().st_mode) == 0o600
+    assert [f.name for f in serveur["racine"].iterdir() if f.name.startswith(".env.")] == []
+    assert "up -d" not in _appels(serveur)
+
+
 def test_deploy_malsain_propose_le_retour(serveur):
     serveur["env"]["FAUX_ETAT"] = "unhealthy"
     resultat = _lancer("deploy.sh", IMAGE, env=serveur["env"])
@@ -107,6 +128,14 @@ def test_deploy_malsain_propose_le_retour(serveur):
     assert f"deploy.sh {PRECEDENTE}" in resultat.stderr
     # Le retour arrière est proposé, jamais exécuté.
     assert f"pull {PRECEDENTE}" not in _appels(serveur)
+
+
+def test_deploy_admin_qui_redemarre_en_boucle(serveur):
+    """`running` entre deux plantages ne suffit pas : le compteur ne doit pas bouger."""
+    serveur["env"]["FAUX_REDEMARRE"] = "1"
+    resultat = _lancer("deploy.sh", IMAGE, env=serveur["env"])
+    assert resultat.returncode == 1
+    assert "admin" in resultat.stderr and f"deploy.sh {PRECEDENTE}" in resultat.stderr
 
 
 def test_deploy_malsain_garde_les_journaux_hors_de_la_ci(serveur):

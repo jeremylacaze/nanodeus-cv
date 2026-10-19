@@ -283,7 +283,12 @@ La pipeline ne dépose **aucun** fichier sur le serveur. Elle tire une image et 
 étapes 1 et 5 (et, pour les unités, un nouveau `sudo cp` suivi d'un `daemon-reload`). Sans cela, le serveur continue d'exécuter l'ancienne version, sans
 aucun avertissement.
 
-Après chaque copie, comparer les fichiers :
-`ssh deploy@<netcup> 'sha256sum /opt/nanodeus-cv/*.sh /opt/nanodeus-cv/compose.yml'`
-doit donner les mêmes empreintes que `sha256sum deploy/*.sh deploy/compose.yml` sur le
-poste.
+Après chaque copie, comparer les fichiers, unités installées comprises :
+
+```sh
+ssh deploy@<netcup> 'cd /opt/nanodeus-cv && sha256sum *.sh compose.yml &&
+  cd /etc/systemd/system && sha256sum nanodeus-cv-nuit.service nanodeus-cv-nuit.timer'
+(cd deploy && sha256sum *.sh compose.yml nanodeus-cv-nuit.service nanodeus-cv-nuit.timer)
+```
+
+Les deux listes doivent donner les mêmes empreintes, fichier par fichier.
