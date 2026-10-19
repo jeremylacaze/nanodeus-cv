@@ -1,4 +1,5 @@
 /* CV « pipeline » — thème sombre de GitHub en référence, clair si le système le demande.
+   Le visiteur peut imposer sombre, clair ou beige : theme.js pose data-theme sur <html>.
    Aucun style en ligne : la CSP n'autorise que cette feuille (style-src 'self'). */
 :root {
   --fond: #0d1117; --carte: #161b22; --carte-2: #21262d; --groupe: #11161d;
@@ -10,13 +11,28 @@
   --point-rupture: 720px; /* rappel : la valeur réelle est dans les @media et pipeline.js */
   color-scheme: dark;
 }
+/* Clair : celui du système, sauf choix contraire, ou celui choisi. Deux blocs
+   identiques, une règle @media ne pouvant pas partager un sélecteur hors média. */
 @media (prefers-color-scheme: light) {
-  :root {
+  :root:not([data-theme]) {
     --fond: #ffffff; --carte: #f6f8fa; --carte-2: #eaeef2; --groupe: #f6f8fa;
     --bord: #d0d7de; --texte: #1f2328; --muted: #59636e;
     --ok: #1a7f37; --run: #9a6700; --sel: #0969da; --btn: #1f883d; --erreur: #cf222e;
     color-scheme: light;
   }
+}
+:root[data-theme="clair"] {
+  --fond: #ffffff; --carte: #f6f8fa; --carte-2: #eaeef2; --groupe: #f6f8fa;
+  --bord: #d0d7de; --texte: #1f2328; --muted: #59636e;
+  --ok: #1a7f37; --run: #9a6700; --sel: #0969da; --btn: #1f883d; --erreur: #cf222e;
+  color-scheme: light;
+}
+/* Beige : papier chaud, texte brun, accents désaturés (contraste AA sur chaque fond). */
+:root[data-theme="beige"] {
+  --fond: #f4ecd8; --carte: #fbf6ea; --carte-2: #efe4cc; --groupe: #f8f1e2;
+  --bord: #d6c6a3; --texte: #3b2f22; --muted: #6b5a45;
+  --ok: #44691f; --run: #8f5a08; --sel: #2c5f8a; --btn: #44691f; --erreur: #a8352a;
+  color-scheme: light;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -35,8 +51,14 @@ h1, h2, h3, p, dl, dd { margin: 0; }
 @keyframes pulse { 50% { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }
 
-/* En-tête : langue */
-.langues { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+/* En-tête : thème et langue */
+.outils { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-bottom: 8px; }
+.langues { display: flex; }
+.theme select {
+  font: 600 12px var(--mono); color: var(--texte); background: var(--carte);
+  border: 1px solid var(--bord); border-radius: 6px; padding: 3px 6px; cursor: pointer;
+}
+.theme select:hover, .theme select:focus-visible { border-color: var(--sel); }
 .langues a {
   font: 600 12px var(--mono); color: var(--texte); text-decoration: none;
   border: 1px solid var(--bord); border-radius: 6px; padding: 3px 10px; background: var(--carte);
@@ -229,14 +251,15 @@ a.btn-contact, span.btn-contact { display: inline-block; text-decoration: none; 
   .photo { width: 52px; height: 52px; font-size: 15px; }
 }
 
-/* Impression : clair, tous les détails dépliés, sans boutons d'action */
+/* Impression : clair quel que soit le thème choisi, tous les détails dépliés,
+   sans boutons d'action. [data-theme] : même poids que les thèmes, placé après eux. */
 @media print {
-  :root {
+  :root, :root[data-theme] {
     --fond: #fff; --carte: #fff; --carte-2: #fff; --groupe: #fff; --bord: #bbb;
     --texte: #000; --muted: #444; --ok: #1a7f37; --run: #7a5200; --sel: #000;
     color-scheme: light;
   }
-  .langues, .suggestion-langue, .apercu, .btn-contact, .modale-contact { display: none !important; }
+  .outils, .suggestion-langue, .apercu, .btn-contact, .modale-contact { display: none !important; }
   .details[hidden], .detail[hidden] { display: block !important; }
   .pulse { animation: none; }
   .graphe { overflow: visible; flex-wrap: wrap; -webkit-mask-image: none; mask-image: none; }

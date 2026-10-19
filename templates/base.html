@@ -6,14 +6,27 @@
   {% block meta %}{% endblock %}
   <title>{% block titre %}{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='cv.css') }}">
+  {#- Sans defer : le thème choisi est posé avant le premier affichage. #}
+  <script src="{{ url_for('static', filename='theme.js') }}" nonce="{{ csp_nonce }}"></script>
   {% block scripts %}{% endblock %}
 </head>
 <body>
   <div class="page">
-    <nav class="langues" aria-label="{{ _('Langue') }}">
-      {% if lang == "en" %}<a href="{{ url_autre_langue }}" hreflang="fr" lang="fr">FR</a>
-      {% else %}<a href="{{ url_autre_langue }}" hreflang="en" lang="en">EN</a>{% endif %}
-    </nav>
+    <div class="outils">
+      {#- Sans JavaScript, le sélecteur reste masqué et le thème suit le système. #}
+      <div class="theme" hidden>
+        <select data-action="theme" aria-label="{{ _('Thème') }}">
+          <option value="systeme">{{ _("Système") }}</option>
+          <option value="sombre">{{ _("Sombre") }}</option>
+          <option value="clair">{{ _("Clair") }}</option>
+          <option value="beige">{{ _("Beige") }}</option>
+        </select>
+      </div>
+      <nav class="langues" aria-label="{{ _('Langue') }}">
+        {% if lang == "en" %}<a href="{{ url_autre_langue }}" hreflang="fr" lang="fr">FR</a>
+        {% else %}<a href="{{ url_autre_langue }}" hreflang="en" lang="en">EN</a>{% endif %}
+      </nav>
+    </div>
     {% block contenu %}{% endblock %}
   </div>
 </body>
