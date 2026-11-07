@@ -10,11 +10,19 @@
   <span class="job__duree">{{ droite }}</span>
 </button>
 {%- endmacro %}
+{#- Titre du détail et son lien direct (#detail-<clé>), hors du <h3> : le nom de la
+    section ne doit pas inclure celui du lien. pipeline.js ouvre le job de l'ancre. #}
+{% macro entete(cle, intitule) -%}
+<div class="detail__entete">
+  <h3 class="detail__titre" id="titre-{{ cle }}">{{ intitule }}</h3>
+  <a class="ancre" href="#detail-{{ cle }}" aria-label="{{ _('Lien direct vers « %(intitule)s »', intitule=intitule) }}">#</a>
+</div>
+{%- endmacro %}
 {% macro detail(job) -%}
 {% set org = (job.via ~ " → " ~ job.organisation) if job.via and job.organisation else (job.organisation or job.via) %}
 {% set quand = job.annee if job.type == "formation" else job.periode ~ " · " ~ job.duree %}
 <section class="detail" id="detail-{{ job.cle }}" aria-labelledby="titre-{{ job.cle }}">
-  <h3 class="detail__titre" id="titre-{{ job.cle }}">{{ job.intitule }}</h3>
+  {{ entete(job.cle, job.intitule) }}
   <p class="detail__meta muted">{{ [org, quand] | select | join(" · ") }}</p>
   {% if job.missions %}
   <ol class="etapes">
@@ -64,7 +72,7 @@
   <div class="details">
     {% for job in jobs %}{{ detail(job) }}{% endfor %}
     <section class="detail" id="detail-prochaine" aria-labelledby="titre-prochaine">
-      <h3 class="detail__titre" id="titre-prochaine">{{ _("Prochaine mission") }}</h3>
+      {{ entete("prochaine", _("Prochaine mission")) }}
       <p class="detail__meta muted">{{ _("en attente d'un runner…") }}</p>
       {% if vue.prochaine_mission %}
       <ol class="etapes"><li><span class="run" aria-hidden="true">●</span> {{ _("Objectif : %(mission)s", mission=vue.prochaine_mission) }}</li></ol>

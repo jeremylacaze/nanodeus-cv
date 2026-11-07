@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: nanodeus-cv VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-19 21:34+0200\n"
+"POT-Creation-Date: 2026-11-07 11:09+0100\n"
 "PO-Revision-Date: 2026-10-18 19:17+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -24,6 +24,9 @@ msgid "%(num)s an"
 msgid_plural "%(num)s ans"
 msgstr[0] "%(num)s year"
 msgstr[1] "%(num)s years"
+
+msgid "Aller au contenu"
+msgstr "Skip to content"
 
 msgid "Artefacts"
 msgstr "Artifacts"
@@ -88,6 +91,10 @@ msgstr "The form you sent is too large."
 #, python-format
 msgid "Le message dépasse %(n)s caractères."
 msgstr "The message is longer than %(n)s characters."
+
+#, python-format
+msgid "Lien direct vers « %(intitule)s »"
+msgstr "Direct link to “%(intitule)s”"
 
 msgid "Merci ! Jeremy vous répondra à l'adresse indiquée."
 msgstr "Thank you! Jeremy will reply to the address you gave."

@@ -200,7 +200,8 @@ def test_lien_autre_langue_reste_sur_le_site(client, url):
     # Werkzeug fusionne d'abord les doubles barres (redirection sur le même hôte).
     corps = client.get(url, follow_redirects=True).get_data(as_text=True)
     liens = re.findall(r'href="([^"]*)"', corps)
-    assert liens and all(lien.startswith("/") and not lien.startswith(("//", "/\\"))
+    # Un fragment seul (#contenu) reste sur la page.
+    assert liens and all(lien.startswith(("/", "#")) and not lien.startswith(("//", "/\\"))
                          for lien in liens)
 
 
