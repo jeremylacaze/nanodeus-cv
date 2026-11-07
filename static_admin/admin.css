@@ -67,7 +67,8 @@ code { font: 12px var(--mono); background: var(--carte-2); padding: 1px 5px; bor
 .nav a { display: block; padding: 6px 10px; border-radius: 6px; color: var(--texte);
   text-decoration: none; }
 .nav a:hover { background: var(--carte-2); }
-.nav a[aria-current="page"] { font-weight: 600; color: var(--sel);
+.nav a[aria-current="page"] { font-weight: 600;
+  color: color-mix(in srgb, var(--sel) 75%, var(--texte));
   background: color-mix(in srgb, var(--sel) 14%, transparent); }
 .lateral__pied { margin-top: auto; display: flex; flex-direction: column; gap: 10px;
   padding: 0 10px; }
@@ -248,22 +249,18 @@ td.texte-long { min-width: 16em; }
 .table-composition tr:has(input[type=checkbox]:checked) label { color: var(--texte); font-weight: 600; }
 .table-composition textarea { min-height: 4em; min-width: 12em; font-size: 13px; }
 
-/* Badges d'état */
+/* Badges d'état. Le texte est la couleur du statut foncée vers --texte : sur la
+   teinte du fond, en 11 px, la couleur pure n'atteint pas 4,5:1 en thème clair. */
 .badge { display: inline-block; vertical-align: middle; font: 600 11px/1.6 var(--mono);
   padding: 0 7px; border-radius: 10px; border: 1px solid var(--bord); color: var(--muted);
   white-space: nowrap; }
-.badge--publiee, .badge--envoyee { color: var(--ok); border-color: var(--ok);
-  background: color-mix(in srgb, var(--ok) 10%, transparent); }
-.badge--non_listee, .badge--defaut { color: var(--sel); border-color: var(--sel);
-  background: color-mix(in srgb, var(--sel) 10%, transparent); }
-.badge--en_attente { color: var(--run); border-color: var(--run);
-  background: color-mix(in srgb, var(--run) 10%, transparent); }
-.badge--echec, .badge--refusee { color: var(--erreur); border-color: var(--erreur);
-  background: color-mix(in srgb, var(--erreur) 10%, transparent); }
-.badge--relancee, .badge--entretien { color: var(--run); border-color: var(--run);
-  background: color-mix(in srgb, var(--run) 10%, transparent); }
-.badge--offre { color: var(--sel); border-color: var(--sel);
-  background: color-mix(in srgb, var(--sel) 10%, transparent); }
+.badge--publiee, .badge--envoyee { --statut: var(--ok); }
+.badge--non_listee, .badge--defaut, .badge--offre { --statut: var(--sel); }
+.badge--en_attente, .badge--relancee, .badge--entretien { --statut: var(--run); }
+.badge--echec, .badge--refusee { --statut: var(--erreur); }
+.badge[class*="badge--"] { border-color: var(--statut, var(--bord));
+  color: color-mix(in srgb, var(--statut, var(--muted)) 75%, var(--texte));
+  background: color-mix(in srgb, var(--statut, transparent) 10%, transparent); }
 .chronologie { margin: 8px 0; padding: 0; }
 
 /* ---------- Graphiques (SVG rendu côté serveur) ---------- */

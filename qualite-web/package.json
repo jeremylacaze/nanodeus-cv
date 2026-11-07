@@ -1,0 +1,12 @@
+{
+  "name": "nanodeus-cv-qualite-web",
+  "private": true,
+  "description": "Accessibilité (pa11y : axe et HTML_CodeSniffer), comportement du parcours (Puppeteer) et Lighthouse CI, lancés par scripts/qualite-web.sh.",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "devDependencies": {
+    "@lhci/cli": "0.15.1",
+    "pa11y": "10.0.0",
+    "puppeteer": "25.15.0"
+  }
+}

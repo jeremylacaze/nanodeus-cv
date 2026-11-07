@@ -25,8 +25,9 @@ RESEAUX_ADMIS = [ipaddress.ip_network(r) for r in
                  ("127.0.0.0/8", "192.0.2.0/24", "198.51.100.0/24", "203.0.113.0/24")]
 
 EMAIL = re.compile(r"[\w.%+-]+@[\w-]+(?:\.[\w-]+)*\.[a-z]{2,}", re.IGNORECASE)
+# i@izs.me : avis de dépréciation de glob 7 recopié dans qualite-web/package-lock.json.
 EMAILS_ADMIS = {"cv@nanodeus.com", "noreply@anthropic.com",
-                "254094035+jeremylacaze@users.noreply.github.com"}
+                "254094035+jeremylacaze@users.noreply.github.com", "i@izs.me"}
 # Domaines des valeurs de test ; li.org vient de l'en-tête que Babel pose dans les .po.
 DOMAINES_ADMIS = {"test.invalid", "exemple.test", "example.com", "ex.fr", "b.fr", "c.fr",
                   "d.fr", "y.fr", "exémple.fr", "xn--exmple-cva.fr", "li.org"}

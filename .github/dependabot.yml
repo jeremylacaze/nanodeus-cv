@@ -21,6 +21,22 @@ updates:
       python:
         update-types: [minor, patch]
 
+  # Outils de qualité web (qualite-web/package.json), pour la CI seulement.
+  - package-ecosystem: npm
+    directory: /qualite-web
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: CHORE
+      include: scope
+    groups:
+      qualite-web:
+        update-types: [minor, patch]
+
   # SHA épinglés dans .github/workflows (et le commentaire `# vX.Y.Z` qui suit).
   - package-ecosystem: github-actions
     directory: /
