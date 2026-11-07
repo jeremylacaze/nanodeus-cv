@@ -6,6 +6,8 @@ LIBELLES = {
     "poste": "Poste", "formation": "Formation", "projet": "Projet",
     "principale": "Principale", "parallele": "Parallèle",
     "page": "Page", "contact": "Contact", "pdf": "PDF", "apercu_linkedin": "Aperçu LinkedIn",
+    "preparee": "Préparée", "relancee": "Relancée", "entretien": "Entretien",
+    "refusee": "Refusée", "offre": "Offre", "fr": "Français", "en": "Anglais",
 }
 
 

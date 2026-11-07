@@ -258,8 +258,13 @@ td.texte-long { min-width: 16em; }
   background: color-mix(in srgb, var(--sel) 10%, transparent); }
 .badge--en_attente { color: var(--run); border-color: var(--run);
   background: color-mix(in srgb, var(--run) 10%, transparent); }
-.badge--echec { color: var(--erreur); border-color: var(--erreur);
+.badge--echec, .badge--refusee { color: var(--erreur); border-color: var(--erreur);
   background: color-mix(in srgb, var(--erreur) 10%, transparent); }
+.badge--relancee, .badge--entretien { color: var(--run); border-color: var(--run);
+  background: color-mix(in srgb, var(--run) 10%, transparent); }
+.badge--offre { color: var(--sel); border-color: var(--sel);
+  background: color-mix(in srgb, var(--sel) 10%, transparent); }
+.chronologie { margin: 8px 0; padding: 0; }
 
 /* ---------- Graphiques (SVG rendu côté serveur) ---------- */
 .graphique { margin: 8px 0 0; }

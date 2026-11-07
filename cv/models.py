@@ -18,6 +18,8 @@ STATUTS = ("brouillon", "publiee", "non_listee")
 TYPES_ELEMENT = ("entree", "soft_skill", "competence", "chiffre")
 STATUTS_DEMANDE = ("en_attente", "envoyee", "echec")
 TYPES_VISITE = ("page", "contact", "pdf", "apercu_linkedin")
+STATUTS_CANDIDATURE = ("preparee", "envoyee", "relancee", "entretien", "refusee", "offre")
+LANGUES = ("fr", "en")
 # Seule définition du slug d'une version (/<slug>) : routes, lien d'autre langue, base.
 SLUG = r"[a-z0-9-]{1,40}"
 
@@ -179,9 +181,30 @@ class Visite(Base):
     type: Mapped[str] = mapped_column(String(20))
     version_slug: Mapped[str] = mapped_column(String(40))
     langue: Mapped[str] = mapped_column(String(2))
-    source: Mapped[str] = mapped_column(String(100))
+    # Indexée : la page d'une candidature cherche ses visites par source.
+    source: Mapped[str] = mapped_column(String(100), index=True)
     appareil: Mapped[str] = mapped_column(String(12))
     empreinte: Mapped[str] = mapped_column(String(32))
+
+
+class Candidature(Base):
+    """Un CV envoyé à une entreprise, avec son lien propre : `?src=<source>`.
+
+    Les visites venues de ce lien portent la source ; celles du même visiteur le même
+    jour (même empreinte) complètent la chronologie, le PDF par exemple."""
+    __tablename__ = "candidature"
+    __table_args__ = (_dans("statut", STATUTS_CANDIDATURE), _dans("langue", LANGUES))
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    cree_le: Mapped[datetime] = mapped_column(DateTime)
+    entreprise: Mapped[str] = mapped_column(String(120))
+    poste: Mapped[str] = mapped_column(String(160), default="")
+    version_slug: Mapped[str] = mapped_column(String(40))
+    langue: Mapped[str] = mapped_column(String(2), default="fr")
+    source: Mapped[str] = mapped_column(String(40), unique=True)
+    statut: Mapped[str] = mapped_column(String(20), default="preparee")
+    envoyee_le: Mapped[date | None] = mapped_column(Date)
+    notes: Mapped[str] = mapped_column(Text, default="")
 
 
 class SelJournalier(Base):

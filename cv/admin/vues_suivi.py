@@ -5,6 +5,7 @@ from flask import current_app, g, render_template, request
 from sqlalchemy import func, or_, select
 
 from cv.admin import bp
+from cv.admin.candidatures import dernieres_actives
 from cv.admin.suivi import Filtres, lire_filtres, serie_jours, totaux, valeurs_presentes, visites
 from cv.admin.vues_contenu import ok, trouver
 from cv.contact import envoyer_demande, message_de_test, renvoyable
@@ -35,7 +36,8 @@ def accueil():
             Visite.type != "apercu_linkedin").subquery()),
         a_completer=compte(select(SoftSkill).where(
             or_(SoftSkill.preuve_fr.is_(None), func.trim(SoftSkill.preuve_fr) == ""))
-            .subquery()))
+            .subquery()),
+        candidatures=dernieres_actives(db))
 
 
 def _demande(id_: int) -> DemandeContact:

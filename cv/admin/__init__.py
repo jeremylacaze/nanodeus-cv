@@ -40,4 +40,4 @@ def _contexte():
             "url_site": current_app.config["CV"].URL_SITE}
 
 
-from cv.admin import vues_contenu, vues_suivi  # noqa: E402,F401
+from cv.admin import vues_candidatures, vues_contenu, vues_suivi  # noqa: E402,F401
