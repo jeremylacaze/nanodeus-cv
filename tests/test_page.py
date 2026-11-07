@@ -120,7 +120,7 @@ def test_open_graph(client):
     assert '<meta property="og:url" content="http://localhost/">' in html
     assert 'property="og:locale" content="fr_FR"' in html
     assert 'property="og:locale" content="en_US"' in _html(client, "/en/devops")
-    assert 'og:image' not in html
+    assert '<meta property="og:image" content="http://localhost/devops/carte.png">' in html
 
 
 def test_og_url_sans_parametre(client):

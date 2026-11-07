@@ -16,7 +16,15 @@
   <meta property="og:title" content="{{ vue.nom }}{% if vue.titre %} — {{ vue.titre }}{% endif %}">
   {% if vue.accroche %}<meta property="og:description" content="{{ vue.accroche }}">{% endif %}
   <meta property="og:url" content="{{ url_canonique }}">
-  {% if url_og_image %}<meta property="og:image" content="{{ url_og_image }}">{% endif %}
+  {#- Carte dessinée par cv/carte_og.py ; l'aperçu de l'admin n'en a pas. #}
+  {% if url_og_image %}
+  <meta property="og:image" content="{{ url_og_image }}">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="{{ vue.nom }}{% if vue.titre %} — {{ vue.titre }}{% endif %}">
+  <meta name="twitter:card" content="summary_large_image">
+  {% endif %}
   <meta property="og:locale" content="{{ 'en_US' if lang == 'en' else 'fr_FR' }}">
 {% endblock %}
 {% block titre %}{{ vue.nom }}{% if vue.titre %} · {{ vue.titre }}{% endif %}{% endblock %}

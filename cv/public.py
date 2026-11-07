@@ -10,6 +10,7 @@ from flask_babel import gettext as _
 from sqlalchemy import select
 
 from cv.deploiement import deploiement
+from cv.carte_og import carte_en_cache, contenu_carte
 from cv.contact import Formulaire, enregistrer, envoyer_demande, limite_atteinte, valider
 from cv.journal import empreinte, journaliser, maintenant_utc
 from cv.langue import suggerer_anglais
@@ -64,12 +65,13 @@ def _page(slug: str | None):
     racine = _racine()
     urls = urls_langues(racine, vue)
     url_image = racine + vue.photo_url if vue.photo_url else ""
+    url_carte = f"{racine}{'/en' if vue.lang == 'en' else ''}/{vue.slug}/carte.png"
     reponse = make_response(render_template(
         "cv.html", vue=vue, suggestion_en=suggerer_anglais(request),
         url_canonique=urls[vue.lang], urls_langues=urls,
         jsonld=donnees_structurees(vue, urls[vue.lang], url_image),
         url_pdf=f"{'/en' if g.lang == 'en' else ''}/{vue.slug}.pdf",
-        url_og_image=url_image,
+        url_og_image=url_carte,
         deploiement=deploiement(current_app.config["CV"], vue.lang)))
     # Le bandeau « View in English » dépend de cet en-tête : un cache doit le savoir.
     reponse.vary.add("Accept-Language")
@@ -153,6 +155,30 @@ def version_pdf(slug):
     if vue.noindex:
         reponse.headers["X-Robots-Tag"] = "noindex"
     journaliser(g.db, request, config, "pdf", vue.slug, g.lang)
+    return reponse.make_conditional(request)
+
+
+@bp.get("/<slug>/carte.png")
+@bp.get("/en/<slug>/carte.png")
+def version_carte(slug):
+    """Carte d'aperçu (og:image). Non journalisée : ce sont les robots des réseaux
+    qui la demandent, pas des visiteurs."""
+    if not _SLUG.fullmatch(slug):
+        abort(404)
+    config = current_app.config["CV"]
+    vue = assembler_vue(g.db, slug, g.lang, config=config)
+    if vue is None:
+        abort(404)
+    adresse = re.sub(r"^https?://", "", config.URL_SITE) + ("" if vue.par_defaut else f"/{vue.slug}")
+    photo = lire_photo(g.db, config) if vue.photo_url else None
+    contenu, etag = carte_en_cache(config.DOSSIER_CACHE_CARTES, contenu_carte(vue, adresse), photo)
+    reponse = make_response(contenu)
+    reponse.mimetype = "image/png"
+    reponse.set_etag(etag)
+    # Courte durée : les réseaux la gardent de toute façon, et l'ETag suit le contenu.
+    reponse.headers["Cache-Control"] = "public, max-age=3600"
+    if vue.noindex:
+        reponse.headers["X-Robots-Tag"] = "noindex"
     return reponse.make_conditional(request)
 
 

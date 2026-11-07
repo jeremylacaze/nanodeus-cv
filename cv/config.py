@@ -37,6 +37,7 @@ class Config:
         # Hors du dépôt : la photo est personnelle, le cache se reconstruit.
         self.DOSSIER_PHOTOS = self.DATA_DIR / "photos"
         self.DOSSIER_CACHE_PDF = self.DATA_DIR / "cache-pdf"
+        self.DOSSIER_CACHE_CARTES = self.DATA_DIR / "cache-cartes"
         self.ROLE = os.environ.get("CV_ROLE", "public")
         if self.ROLE not in ROLES:
             raise ValueError(f"CV_ROLE inconnu : {self.ROLE!r}")

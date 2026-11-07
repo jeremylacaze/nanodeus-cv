@@ -77,6 +77,10 @@ fi
 
 obtenir /admin/ 404
 
+# Carte d'aperçu (og:image) : dessinée avec les polices DejaVu de l'image.
+obtenir /devops/carte.png 200
+[ "$(head -c 4 "$TMP/corps" | tail -c 3)" = "PNG" ] || echec "/devops/carte.png : ce n'est pas un PNG"
+
 for pdf in /devops.pdf /en/devops.pdf /lead-tech.pdf /en/lead-tech.pdf; do
     obtenir "$pdf" 200
     [ "$(head -c 4 "$TMP/corps")" = "%PDF" ] || echec "$pdf : ce n'est pas un PDF"
