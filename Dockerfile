@@ -27,8 +27,16 @@ RUN python scripts/i18n.py compile \
 # UID numérique (hadolint DL3066).
 USER 1000
 
+# Commit et date du build, affichés en pied de page (« ✓ déployé il y a … · sha »).
+# Posés par release.yml ; vides en local, le pied de page n'en dit alors rien.
+# Déclarés tard : changer de commit n'invalide pas les couches au-dessus.
+ARG CV_COMMIT=""
+ARG CV_CONSTRUIT_LE=""
+
 # XDG_CACHE_HOME : fontconfig écrit son cache dans le tmpfs /tmp.
 ENV CV_DATA_DIR=/data \
+    CV_COMMIT=$CV_COMMIT \
+    CV_CONSTRUIT_LE=$CV_CONSTRUIT_LE \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     XDG_CACHE_HOME=/tmp/cache

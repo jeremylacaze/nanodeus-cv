@@ -2,12 +2,14 @@
 # Test de fumée d'une image : réglages de la prod (CV_PROD=1, lecture seule, volume
 # neuf), mais projet, volume et ports à part. Rien ne reste à la fin.
 #
-#   scripts/fumee-image.sh <image>        (PYTHON=… : interpréteur qui a pypdf)
+#   scripts/fumee-image.sh <image>        (PYTHON=… : interpréteur qui a pypdf ;
+#                                          COMMIT_ATTENDU=<sha> : commit du pied de page)
 set -euo pipefail
 
 IMAGE="${1:?usage : scripts/fumee-image.sh <image>}"
 RACINE="$(cd "$(dirname "$0")/.." && pwd)"
 PYTHON="${PYTHON:-python3}"
+COMMIT_ATTENDU="${COMMIT_ATTENDU:-}"
 PUBLIC="http://127.0.0.1:18010"
 TMP="$(mktemp -d)"
 RESEAU_CREE=0
@@ -69,6 +71,9 @@ done
 obtenir / 200
 grep -qi '^content-security-policy:' "$TMP/entetes" || echec "/ : aucune CSP"
 if grep -qi '^set-cookie:' "$TMP/entetes"; then echec "/ : cookie posé"; fi
+if [ -n "$COMMIT_ATTENDU" ]; then
+    grep -q "/commit/$COMMIT_ATTENDU\"" "$TMP/corps" || echec "/ : commit absent du pied de page"
+fi
 
 obtenir /admin/ 404
 

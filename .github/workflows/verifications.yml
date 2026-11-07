@@ -140,8 +140,9 @@ jobs:
           docker run --rm -v "$PWD:/src:ro" -w /src "$HADOLINT"
           hadolint --no-color --config .hadolint.yaml Dockerfile
 
+      # Même commit injecté que par la release : la fumée vérifie le pied de page.
       - name: Build de l'image
-        run: docker build -t nanodeus-cv:ci .
+        run: docker build --build-arg CV_COMMIT="$GITHUB_SHA" -t nanodeus-cv:ci .
 
       # La fumée compte les pages des PDF sur l'hôte : pypdf n'est pas dans l'image.
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -152,4 +153,4 @@ jobs:
         run: pip install pypdf==6.21.1
 
       - name: Test de fumée
-        run: scripts/fumee-image.sh nanodeus-cv:ci
+        run: COMMIT_ATTENDU="$GITHUB_SHA" scripts/fumee-image.sh nanodeus-cv:ci

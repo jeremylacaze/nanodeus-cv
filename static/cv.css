@@ -204,6 +204,7 @@ a.btn-contact, span.btn-contact { display: inline-block; text-decoration: none; 
   padding: 3px 10px; background: var(--carte);
 }
 .confidentialite { margin: 16px 0 0; font-size: 12px; }
+.deploiement { margin: 16px 0 0; }
 
 /* Demande de contact : modale (avec JS) et page (sans JS) */
 .modale-contact {
@@ -273,7 +274,7 @@ a.btn-contact, span.btn-contact { display: inline-block; text-decoration: none; 
     --texte: #000; --muted: #444; --ok: #1a7f37; --run: #7a5200; --sel: #000;
     color-scheme: light;
   }
-  .outils, .suggestion-langue, .apercu, .btn-contact, .modale-contact, .evitement, .ancre { display: none !important; }
+  .outils, .suggestion-langue, .apercu, .btn-contact, .modale-contact, .evitement, .ancre, .deploiement { display: none !important; }
   .details[hidden], .detail[hidden] { display: block !important; }
   .pulse { animation: none; }
   .graphe { overflow: visible; flex-wrap: wrap; -webkit-mask-image: none; mask-image: none; }

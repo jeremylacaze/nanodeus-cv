@@ -1,6 +1,7 @@
 """Configuration lue dans l'environnement, au démarrage."""
 import os
 import re
+from datetime import UTC, datetime
 from ipaddress import ip_network
 from pathlib import Path
 
@@ -11,6 +12,7 @@ RESEAUX_PAR_DEFAUT = "100.64.0.0/10,fd7a:115c:a1e0::/48,127.0.0.0/8,::1/128"
 HOTES_PAR_DEFAUT = "localhost,127.0.0.1,::1"
 URL_PAR_DEFAUT = "https://cv.nanodeus.com"
 SECRET_DE_DEV = "dev-uniquement"
+DEPOT_PAR_DEFAUT = "https://github.com/jeremylacaze/nanodeus-cv"
 
 
 def lire_reseaux(texte: str) -> tuple:
@@ -18,6 +20,15 @@ def lire_reseaux(texte: str) -> tuple:
     (y compris une adresse d'hôte comme 100.64.0.7/10, sans doute une faute de frappe)."""
     return tuple(ip_network(morceau.strip(), strict=True)
                  for morceau in texte.split(",") if morceau.strip())
+
+
+def lire_construit_le(texte: str) -> datetime | None:
+    """Date de build (ISO 8601, UTC) ; None si absente ou illisible."""
+    try:
+        quand = datetime.fromisoformat(texte.strip())
+    except ValueError:
+        return None
+    return quand.replace(tzinfo=UTC) if quand.tzinfo is None else quand.astimezone(UTC)
 
 
 class Config:
@@ -56,6 +67,14 @@ class Config:
         self.URL_PUBLIQUE = os.environ.get("CV_URL_PUBLIQUE", "").rstrip("/")
         if self.URL_PUBLIQUE and not re.fullmatch(r"https?://[^/\s]+", self.URL_PUBLIQUE):
             raise ValueError(f"CV_URL_PUBLIQUE invalide : {self.URL_PUBLIQUE!r}")
+        # Commit et date du build, posés par le Dockerfile (release.yml) : pied de page
+        # « ✓ déployé il y a … · sha ». Une valeur douteuse est ignorée, jamais fatale.
+        commit = os.environ.get("CV_COMMIT", "").strip().lower()
+        self.COMMIT = commit if re.fullmatch(r"[0-9a-f]{40}", commit) else ""
+        self.CONSTRUIT_LE = lire_construit_le(os.environ.get("CV_CONSTRUIT_LE", ""))
+        self.URL_DEPOT = os.environ.get("CV_URL_DEPOT", DEPOT_PAR_DEFAUT).rstrip("/")
+        if not re.fullmatch(r"https://[^\s\"<>]+", self.URL_DEPOT):
+            raise ValueError(f"CV_URL_DEPOT invalide : {self.URL_DEPOT!r}")
         # Envoi des demandes de contact : SMTP générique (Brevo, ou tout autre relais).
         self.SMTP_HOTE = os.environ.get("CV_SMTP_HOTE", "")
         self.SMTP_PORT = int(os.environ.get("CV_SMTP_PORT", "587"))

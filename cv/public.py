@@ -9,6 +9,7 @@ from cv.app import veut_json
 from flask_babel import gettext as _
 from sqlalchemy import select
 
+from cv.deploiement import deploiement
 from cv.contact import Formulaire, enregistrer, envoyer_demande, limite_atteinte, valider
 from cv.journal import empreinte, journaliser, maintenant_utc
 from cv.langue import suggerer_anglais
@@ -68,7 +69,8 @@ def _page(slug: str | None):
         url_canonique=urls[vue.lang], urls_langues=urls,
         jsonld=donnees_structurees(vue, urls[vue.lang], url_image),
         url_pdf=f"{'/en' if g.lang == 'en' else ''}/{vue.slug}.pdf",
-        url_og_image=url_image))
+        url_og_image=url_image,
+        deploiement=deploiement(current_app.config["CV"], vue.lang)))
     # Le bandeau « View in English » dépend de cet en-tête : un cache doit le savoir.
     reponse.vary.add("Accept-Language")
     if vue.noindex:
