@@ -2,6 +2,15 @@
 {% block meta %}
   {% if vue.noindex %}<meta name="robots" content="noindex">{% endif %}
   {% if vue.accroche %}<meta name="description" content="{{ vue.accroche }}">{% endif %}
+  {#- Absents de l'aperçu de l'admin : il n'a pas d'adresse publique. #}
+  {% if urls_langues %}
+  <link rel="canonical" href="{{ url_canonique }}">
+  <link rel="alternate" hreflang="fr" href="{{ urls_langues.fr }}">
+  <link rel="alternate" hreflang="en" href="{{ urls_langues.en }}">
+  <link rel="alternate" hreflang="x-default" href="{{ urls_langues.fr }}">
+  {% endif %}
+  {#- tojson échappe <, > et & : le contenu ne peut pas fermer la balise. #}
+  {% if jsonld %}<script type="application/ld+json" nonce="{{ csp_nonce }}">{{ jsonld | tojson }}</script>{% endif %}
   {# Aperçu LinkedIn : jamais de coordonnées ici. #}
   <meta property="og:type" content="profile">
   <meta property="og:title" content="{{ vue.nom }}{% if vue.titre %} — {{ vue.titre }}{% endif %}">

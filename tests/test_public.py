@@ -71,7 +71,7 @@ def test_url_publique_canonique(fabrique_app, monkeypatch):
     monkeypatch.setenv("CV_URL_PUBLIQUE", "https://cv.nanodeus.com/")
     client = fabrique_app().test_client()
     corps = client.get("/en/devops?src=qr", headers={"Host": "evil.example"}).get_data(as_text=True)
-    assert '<meta property="og:url" content="https://cv.nanodeus.com/en/devops">' in corps
+    assert '<meta property="og:url" content="https://cv.nanodeus.com/en/">' in corps
     assert "evil.example" not in corps
 
 

@@ -53,6 +53,7 @@ class VueCV:
     slug: str
     lang: str
     noindex: bool
+    par_defaut: bool  # servie aussi sur / : c'est son adresse canonique
     nom: str
     titre: str
     accroche: str
@@ -159,6 +160,7 @@ def assembler_vue(session, slug: str | None, lang: str, aujourd_hui: date | None
 
     return VueCV(
         slug=version.slug, lang=lang, noindex=version.statut == "non_listee",
+        par_defaut=bool(version.par_defaut),
         nom=profil.nom_complet or "", titre=champ(version, "titre", lang),
         accroche=champ(version, "accroche", lang), localisation=profil.localisation or "",
         age=age, ouvert=bool(profil.ouvert_opportunites),

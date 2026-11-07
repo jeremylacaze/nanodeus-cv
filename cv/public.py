@@ -1,8 +1,9 @@
 """Routes du site public : une URL par version, en français et en anglais."""
 import re
+from datetime import timedelta
 
 from flask import (Blueprint, abort, current_app, g, jsonify, make_response, redirect,
-                   render_template, request)
+                   render_template, request, send_from_directory)
 
 from cv.app import veut_json
 from flask_babel import gettext as _
@@ -24,6 +25,35 @@ def _racine() -> str:
     return current_app.config["CV"].URL_PUBLIQUE or request.host_url.rstrip("/")
 
 
+def urls_langues(racine: str, vue) -> dict[str, str]:
+    """Adresse canonique de la version dans chaque langue. La version par défaut est
+    servie sur / et sur /<slug> : seule / fait foi, pour ne pas diviser son référencement."""
+    chemin = "/" if vue.par_defaut else f"/{vue.slug}"
+    return {"fr": racine + chemin, "en": racine + "/en" + chemin}
+
+
+def donnees_structurees(vue, url: str, url_image: str) -> dict:
+    """JSON-LD schema.org (ProfilePage → Person) pour les moteurs de recherche.
+    Jamais de coordonnées : ni email ni téléphone, comme partout sur le site public."""
+    personne = {"@type": "Person", "name": vue.nom}
+    if vue.titre:
+        personne["jobTitle"] = vue.titre
+    if vue.accroche:
+        personne["description"] = vue.accroche
+    if vue.localisation:
+        personne["address"] = {"@type": "PostalAddress", "addressLocality": vue.localisation}
+    if url_image:
+        personne["image"] = url_image
+    liens = [u for u in (vue.linkedin_url, vue.github_url) if u]
+    if liens:
+        personne["sameAs"] = liens
+    competences = [nom for noms in vue.competences.values() for nom in noms]
+    if competences:
+        personne["knowsAbout"] = competences
+    return {"@context": "https://schema.org", "@type": "ProfilePage", "url": url,
+            "inLanguage": vue.lang, "mainEntity": personne}
+
+
 def _page(slug: str | None):
     if slug is not None and not _SLUG.fullmatch(slug):
         abort(404)
@@ -31,11 +61,14 @@ def _page(slug: str | None):
     if vue is None:
         abort(404)
     racine = _racine()
+    urls = urls_langues(racine, vue)
+    url_image = racine + vue.photo_url if vue.photo_url else ""
     reponse = make_response(render_template(
         "cv.html", vue=vue, suggestion_en=suggerer_anglais(request),
-        url_canonique=racine + request.path,
+        url_canonique=urls[vue.lang], urls_langues=urls,
+        jsonld=donnees_structurees(vue, urls[vue.lang], url_image),
         url_pdf=f"{'/en' if g.lang == 'en' else ''}/{vue.slug}.pdf",
-        url_og_image=racine + vue.photo_url if vue.photo_url else ""))
+        url_og_image=url_image))
     # Le bandeau « View in English » dépend de cet en-tête : un cache doit le savoir.
     reponse.vary.add("Accept-Language")
     if vue.noindex:
@@ -53,6 +86,35 @@ def accueil():
 @bp.get("/robots.txt")
 def robots():
     reponse = make_response(f"User-agent: *\nDisallow:\n\nSitemap: {_racine()}/sitemap.xml\n")
+    reponse.mimetype = "text/plain"
+    return reponse
+
+
+@bp.get("/favicon.ico")
+def favicon():
+    # Demandé d'office par les navigateurs, sans regarder le <link rel="icon">.
+    return send_from_directory(current_app.static_folder, "favicon.ico",
+                               mimetype="image/x-icon", max_age=7 * 86400)
+
+
+VALIDITE_SECURITY_TXT = timedelta(days=180)
+
+
+@bp.get("/.well-known/security.txt")
+def security_txt():
+    """RFC 9116. Le contact passe par le formulaire de la version par défaut : aucune
+    adresse personnelle. L'expiration glisse : elle est recalculée à chaque requête."""
+    defaut = g.db.scalar(select(Version.slug).where(Version.par_defaut.is_(True)))
+    if defaut is None:
+        abort(404)
+    racine = _racine()
+    expire = (maintenant_utc() + VALIDITE_SECURITY_TXT).replace(hour=0, minute=0, second=0,
+                                                                microsecond=0)
+    reponse = make_response(
+        f"Contact: {racine}/{defaut}/contact\n"
+        f"Expires: {expire:%Y-%m-%dT%H:%M:%SZ}\n"
+        "Preferred-Languages: fr, en\n"
+        f"Canonical: {racine}/.well-known/security.txt\n")
     reponse.mimetype = "text/plain"
     return reponse
 

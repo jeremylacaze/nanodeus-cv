@@ -116,7 +116,8 @@ def test_open_graph(client):
     assert ('<meta property="og:title" content="Jeremy LACAZE-RUSQUES — '
             'Administrateur applicatif / DevOps">') in html
     assert 'property="og:description" content="Porteur d&#39;idées' in html
-    assert '<meta property="og:url" content="http://localhost/devops">' in html
+    # devops est la version par défaut : son adresse canonique est /.
+    assert '<meta property="og:url" content="http://localhost/">' in html
     assert 'property="og:locale" content="fr_FR"' in html
     assert 'property="og:locale" content="en_US"' in _html(client, "/en/devops")
     assert 'og:image' not in html
@@ -124,7 +125,7 @@ def test_open_graph(client):
 
 def test_og_url_sans_parametre(client):
     html = _html(client, "/devops?src=qr")
-    assert '<meta property="og:url" content="http://localhost/devops">' in html
+    assert '<meta property="og:url" content="http://localhost/">' in html
 
 
 def test_script_et_feuille_de_style(client):
