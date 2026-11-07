@@ -2,7 +2,7 @@
 {% block meta %}<meta name="robots" content="noindex">{% endblock %}
 {% block titre %}{{ _("Erreur") }}{% endblock %}
 {% block contenu %}
-  <main class="erreur">
+  <main id="contenu" class="erreur">
     <h1>{{ _("Une erreur est survenue") }}</h1>
     <p><a href="{{ '/en/' if lang == 'en' else '/' }}">{{ _("Retour au CV") }}</a></p>
   </main>

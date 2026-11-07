@@ -289,3 +289,92 @@ def test_aucune_ressource_externe(monkeypatch):
 def test_nom_fichier(nom, complet, attendu):
     vue = SimpleNamespace(nom=nom, slug="devops", lang="fr")
     assert pdf.nom_fichier(vue, complet) == attendu
+
+
+def test_lien_du_projet_cliquable_dans_le_pdf(fabrique_app):
+    from cv.models import Entree
+
+    def avec_lien(s):
+        e = s.scalars(select(Entree).where(Entree.voie == "parallele")).first()
+        e.lien = "https://github.com/jeremylacaze/readln"
+    contenu = fabrique_app(modifier=avec_lien).test_client().get("/devops.pdf").data
+    liens = [a["/A"]["/URI"] for page in PdfReader(BytesIO(contenu)).pages
+             for a in (page.get("/Annots") or []) if a.get_object().get("/A")
+             for a in [a.get_object()]]
+    assert "https://github.com/jeremylacaze/readln" in liens
+    assert _pages(contenu) == 1
+
+
+# --- Lecture par un ATS ---------------------------------------------------------
+# Un logiciel de recrutement ne voit que le texte extrait, dans l'ordre du flux :
+# il doit être complet, sans caractère cassé et dans un ordre qui se lit.
+
+def _brut(contenu: bytes) -> str:
+    return "\n".join(p.extract_text() for p in PdfReader(BytesIO(contenu)).pages)
+
+
+def _illisibles(texte: str) -> set[str]:
+    return {c for c in texte
+            if c == "�"                          # glyphe sans correspondance Unicode
+            or 0xE000 <= ord(c) <= 0xF8FF             # zone privée : police sans ToUnicode
+            or 0xFB00 <= ord(c) <= 0xFB06             # ligature « ﬁ » : « fichier » introuvable
+            or (ord(c) < 32 and c not in "\n\t")}
+
+
+@pytest.mark.parametrize("url", ["/devops.pdf", "/en/devops.pdf", "/lead-tech.pdf",
+                                 "/en/lead-tech.pdf"])
+def test_ats_texte_extractible_et_propre(client, url):
+    texte = _brut(client.get(url).data)
+    assert len(texte) > 1500                      # du texte, pas une image
+    assert not _illisibles(texte) and "(cid:" not in texte
+
+
+@pytest.mark.parametrize("url, lang, titre", [
+    ("/devops.pdf", "fr", "Administrateur applicatif / DevOps"),
+    ("/en/devops.pdf", "en", "Application administrator / DevOps")])
+def test_ats_metadonnees(client, url, lang, titre):
+    lecteur = PdfReader(BytesIO(client.get(url).data))
+    assert lecteur.metadata.author == "Jeremy LACAZE-RUSQUES"
+    assert lecteur.metadata.title == f"Jeremy LACAZE-RUSQUES · {titre}"
+    assert lecteur.trailer["/Root"]["/Lang"] == lang
+
+
+@pytest.mark.parametrize("url, reperes", [
+    ("/devops.pdf", ["Jeremy LACAZE-RUSQUES", "Administrateur applicatif / DevOps",
+                     "EXPÉRIENCES", "Administrateur applicatif", "Administrateur Atlassian",
+                     "Ingénieur DevOps", "PROJETS PERSONNELS", "ReadLN", "FORMATIONS",
+                     "Mastère Expert", "Licence professionnelle", "SOFT SKILLS", "STACK"]),
+    ("/en/devops.pdf", ["Jeremy LACAZE-RUSQUES", "Application administrator / DevOps",
+                        "EXPERIENCE", "Application administrator", "Atlassian administrator",
+                        "DevOps engineer", "PERSONAL PROJECTS", "ReadLN", "EDUCATION",
+                        "SOFT SKILLS", "STACK"])])
+def test_ats_ordre_de_lecture(client, url, reperes):
+    # Chaque repère après le précédent. Le graphe du parcours, dessiné à part, se
+    # lit en dernier : il ne peut pas remettre l'ordre d'aplomb.
+    texte = _brut(client.get(url).data)
+    position = 0
+    for repere in reperes:
+        suivante = texte.find(repere, position)
+        assert suivante >= 0, f"« {repere} » absent après la position {position}"
+        position = suivante + len(repere)
+
+
+@pytest.mark.parametrize("url, attendus", [
+    ("/devops.pdf", [("Administrateur applicatif", "SQLI · ADS · mai 2025 → aujourd'hui"),
+                     ("Administrateur Atlassian", "SQLI · ADS · Astek · févr. 2024 → mai 2025"),
+                     ("Ingénieur DevOps", "Navocap · Astek · oct. 2023 → févr. 2024")]),
+    ("/en/devops.pdf", [("Application administrator", "SQLI · ADS · May 2025 → present"),
+                        ("DevOps engineer", "Navocap · Astek · Oct 2023 → Feb 2024")])])
+def test_ats_chaque_poste_suivi_de_son_entreprise_et_de_ses_dates(client, url, attendus):
+    texte = _brut(client.get(url).data)
+    for intitule, ligne in attendus:
+        assert re.search(rf"^✓ {re.escape(intitule)}[^\n]*\n{re.escape(ligne)}$", texte, re.M), (
+            intitule)
+
+
+def test_ats_mots_et_phrases_intacts(client):
+    texte = _texte(client.get("/devops.pdf").data)
+    for phrase in ("Le tout déployé sous un environnement Kubernetes",
+                   "Support des applications en contact direct avec les utilisateurs",
+                   "Docker · Kubernetes"):
+        assert phrase in texte

@@ -69,6 +69,14 @@ h1, h2, h3, p, dl, dd { margin: 0; }
   padding: 8px 12px; margin-bottom: 14px;
 }
 
+/* Lien d'évitement : hors champ, il apparaît au premier Tab. */
+.evitement {
+  position: absolute; left: 16px; top: -48px; z-index: 10; padding: 6px 12px;
+  background: var(--carte); color: var(--sel); border: 1px solid var(--sel); border-radius: 6px;
+  font-weight: 600; text-decoration: none;
+}
+.evitement:focus { top: 8px; }
+
 /* Aperçu depuis l'admin : jamais rendu sur le site public */
 .apercu {
   background: var(--carte); border: 1px dashed var(--sel); border-radius: 6px;
@@ -152,7 +160,13 @@ h1 { font-size: 22px; line-height: 1.25; }
   font-family: var(--mono); font-size: 13px; overflow-wrap: anywhere;
 }
 .details .detail + .detail { margin-top: 8px; }
+.detail__entete { display: flex; align-items: baseline; gap: 8px; }
 .detail__titre { font: 600 14px var(--sans); }
+/* Lien direct, façon ancre de titre GitHub : discret, révélé au survol ou au focus. */
+.ancre { color: var(--muted); text-decoration: none; font-weight: 600; opacity: .4; }
+.detail:hover .ancre, .ancre:focus-visible { opacity: 1; }
+.ancre:hover, .ancre:focus-visible { color: var(--sel); }
+.ancre:focus-visible { outline: 2px solid var(--sel); outline-offset: 2px; border-radius: 3px; }
 .detail__meta { margin: 2px 0 8px; }
 .etapes { list-style: none; margin: 0; padding: 0; }
 .etapes li { padding: 3px 0 3px 1.4em; text-indent: -1.4em; }
@@ -190,6 +204,7 @@ a.btn-contact, span.btn-contact { display: inline-block; text-decoration: none; 
   padding: 3px 10px; background: var(--carte);
 }
 .confidentialite { margin: 16px 0 0; font-size: 12px; }
+.deploiement { margin: 16px 0 0; }
 
 /* Demande de contact : modale (avec JS) et page (sans JS) */
 .modale-contact {
@@ -259,10 +274,13 @@ a.btn-contact, span.btn-contact { display: inline-block; text-decoration: none; 
     --texte: #000; --muted: #444; --ok: #1a7f37; --run: #7a5200; --sel: #000;
     color-scheme: light;
   }
-  .outils, .suggestion-langue, .apercu, .btn-contact, .modale-contact { display: none !important; }
+  .outils, .suggestion-langue, .apercu, .btn-contact, .modale-contact, .evitement, .ancre, .deploiement { display: none !important; }
   .details[hidden], .detail[hidden] { display: block !important; }
   .pulse { animation: none; }
   .graphe { overflow: visible; flex-wrap: wrap; -webkit-mask-image: none; mask-image: none; }
   .job[aria-expanded="true"] { box-shadow: none; border-color: var(--bord); }
   .detail, .panneau, .kpi { break-inside: avoid; }
 }
+
+/* Lien vers le dépôt ou la démo d'un projet, sous ses technos. */
+.detail__lien { margin-top: 8px; font-family: var(--mono); font-size: 13px; }

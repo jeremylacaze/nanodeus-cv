@@ -4,6 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
+  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" sizes="48x48">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
   <title>{% block titre %}{% endblock %} · Admin CV</title>
   <link rel="stylesheet" href="{{ url_for('admin.static', filename='admin.css') }}">
   {#- Sans defer : le thème choisi est posé avant le premier affichage (même script que le site). #}
@@ -38,6 +41,7 @@
         </div>
         <div class="nav__groupe">
           <span class="nav__titre">Suivi</span>
+          {{ lien("/admin/candidatures", "Candidatures") }}
           {{ lien("/admin/demandes", "Demandes") }}
           {{ lien("/admin/visites", "Visites") }}
         </div>

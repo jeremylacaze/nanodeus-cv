@@ -110,3 +110,30 @@ def test_migration_0003_reversible(tmp_path, monkeypatch):
     assert {"version", "version_element"} <= tables
     alembic.command.upgrade(cfg, "head")
     alembic.command.check(cfg)
+
+
+def test_migration_0004_reversible(tmp_path, monkeypatch):
+    monkeypatch.setenv("CV_DATA_DIR", str(tmp_path))
+    cfg = alembic.config.Config("alembic.ini")
+    alembic.command.upgrade(cfg, "0004")
+    alembic.command.downgrade(cfg, "0003")
+    moteur = creer_moteur(Config().DATABASE_URL)
+    colonnes = {c["name"] for c in inspect(moteur).get_columns("entree")}
+    moteur.dispose()
+    assert "lien" not in colonnes
+    alembic.command.upgrade(cfg, "head")
+    alembic.command.check(cfg)
+
+
+def test_migration_0005_reversible(tmp_path, monkeypatch):
+    monkeypatch.setenv("CV_DATA_DIR", str(tmp_path))
+    cfg = alembic.config.Config("alembic.ini")
+    alembic.command.upgrade(cfg, "head")
+    alembic.command.downgrade(cfg, "0004")
+    moteur = creer_moteur(Config().DATABASE_URL)
+    tables = set(inspect(moteur).get_table_names())
+    index = {i["name"] for i in inspect(moteur).get_indexes("visite")}
+    moteur.dispose()
+    assert "candidature" not in tables and "ix_visite_source" not in index
+    alembic.command.upgrade(cfg, "head")
+    alembic.command.check(cfg)

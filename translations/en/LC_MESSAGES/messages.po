@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: nanodeus-cv VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-19 21:34+0200\n"
+"POT-Creation-Date: 2026-11-07 11:26+0100\n"
 "PO-Revision-Date: 2026-10-18 19:17+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -25,14 +25,17 @@ msgid_plural "%(num)s ans"
 msgstr[0] "%(num)s year"
 msgstr[1] "%(num)s years"
 
+msgid "Aller au contenu"
+msgstr "Skip to content"
+
 msgid "Artefacts"
 msgstr "Artifacts"
 
 msgid "Beige"
 msgstr "Beige"
 
-msgid "Ce site ne dépose aucun cookie ; votre choix de thème reste dans votre navigateur. Chaque visite est notée sans votre adresse IP : date, page, source (LinkedIn, QR code…), type d'appareil et une empreinte pseudonyme renouvelée chaque jour. Ces visites sont effacées après 6 mois. Une demande de contact (email, message, nom et entreprise si indiqués) est gardée jusqu'à ce que Jeremy la supprime."
-msgstr "This site sets no cookies; your theme choice stays in your browser. Each visit is recorded without your IP address: date, page, source (LinkedIn, QR code…), device type and a pseudonymous fingerprint renewed every day. These visits are deleted after 6 months. A contact request (email, message, and name and company if given) is kept until Jeremy deletes it."
+msgid "Ce site ne dépose aucun cookie ; votre choix de thème reste dans votre navigateur. Chaque visite est notée sans votre adresse IP : date, page, source (LinkedIn, QR code, lien joint à une candidature…), type d'appareil et une empreinte pseudonyme renouvelée chaque jour. Ces visites sont effacées après 6 mois. Une demande de contact (email, message, nom et entreprise si indiqués) est gardée jusqu'à ce que Jeremy la supprime."
+msgstr "This site sets no cookies; your theme choice stays in your browser. Each visit is recorded without your IP address: date, page, source (LinkedIn, QR code, link sent with a job application…), device type and a pseudonymous fingerprint renewed every day. These visits are deleted after 6 months. A contact request (email, message, and name and company if given) is kept until Jeremy deletes it."
 
 msgid "Centres d'intérêt"
 msgstr "Interests"
@@ -88,6 +91,10 @@ msgstr "The form you sent is too large."
 #, python-format
 msgid "Le message dépasse %(n)s caractères."
 msgstr "The message is longer than %(n)s characters."
+
+#, python-format
+msgid "Lien direct vers « %(intitule)s »"
+msgstr "Direct link to “%(intitule)s”"
 
 msgid "Merci ! Jeremy vous répondra à l'adresse indiquée."
 msgstr "Thank you! Jeremy will reply to the address you gave."
@@ -185,6 +192,9 @@ msgstr "Your email"
 
 msgid "Vérifiez les champs signalés."
 msgstr "Please check the highlighted fields."
+
+msgid "déployé"
+msgstr "deployed"
 
 msgid "en attente d'un runner…"
 msgstr "waiting for a runner…"

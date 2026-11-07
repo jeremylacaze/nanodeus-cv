@@ -71,7 +71,7 @@ def test_url_publique_canonique(fabrique_app, monkeypatch):
     monkeypatch.setenv("CV_URL_PUBLIQUE", "https://cv.nanodeus.com/")
     client = fabrique_app().test_client()
     corps = client.get("/en/devops?src=qr", headers={"Host": "evil.example"}).get_data(as_text=True)
-    assert '<meta property="og:url" content="https://cv.nanodeus.com/en/devops">' in corps
+    assert '<meta property="og:url" content="https://cv.nanodeus.com/en/">' in corps
     assert "evil.example" not in corps
 
 
@@ -200,7 +200,8 @@ def test_lien_autre_langue_reste_sur_le_site(client, url):
     # Werkzeug fusionne d'abord les doubles barres (redirection sur le même hôte).
     corps = client.get(url, follow_redirects=True).get_data(as_text=True)
     liens = re.findall(r'href="([^"]*)"', corps)
-    assert liens and all(lien.startswith("/") and not lien.startswith(("//", "/\\"))
+    # Un fragment seul (#contenu) reste sur la page.
+    assert liens and all(lien.startswith(("/", "#")) and not lien.startswith(("//", "/\\"))
                          for lien in liens)
 
 

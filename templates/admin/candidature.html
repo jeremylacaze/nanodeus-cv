@@ -1,0 +1,72 @@
+{% extends "admin/base.html" %}
+{% from "admin/_champs.html" import champs as afficher_champs %}
+{% block titre %}{{ c.entreprise if c else "Nouvelle candidature" }}{% endblock %}
+{% block contenu %}
+  <header class="entete-page">
+    <div>
+      <a class="fil" href="/admin/candidatures">← Candidatures</a>
+      <h1>{{ c.entreprise if c else "Nouvelle candidature" }}</h1>
+      {% if c %}
+      <p class="badges"><span class="badge badge--{{ c.statut }}">{{ c.statut | libelle }}</span></p>
+      {% endif %}
+    </div>
+  </header>
+
+  <div class="mise-en-page">
+    <div class="principal">
+      <section class="carte">
+        <h2>Informations</h2>
+        {% if erreurs %}<p class="message alerte" role="alert">Le formulaire contient des erreurs : rien n'a été enregistré.</p>{% endif %}
+        <form method="post" action="/admin/candidatures/{{ c.id if c else 'nouvelle' }}">
+          {{ afficher_champs(champs, valeurs, erreurs) }}
+          <div class="boutons"><button type="submit">Enregistrer</button></div>
+        </form>
+      </section>
+
+      {% if c %}
+      <section class="carte">
+        <h2>Activité</h2>
+        <p>{{ phrase }}</p>
+        {% if evenements %}
+        <ol class="liste chronologie">
+          {% for e in evenements %}
+          <li class="liste__ligne">
+            <span><span>{{ e.horodatage.strftime("%d/%m/%Y %H:%M") }}</span>
+              · {{ e.type | libelle }} <span class="muted">· {{ e.appareil | libelle }}</span></span>
+            {% if e.source != c.source %}<span class="muted petit">même visiteur, lien interne</span>{% endif %}
+          </li>
+          {% endfor %}
+        </ol>
+        {% endif %}
+        <p class="aide">Les visites venues du lien, et celles du même visiteur le même jour
+          (le PDF, le formulaire de contact), reconnues par l'empreinte du journal.</p>
+      </section>
+      {% endif %}
+    </div>
+
+    {% if c %}
+    <aside class="cote">
+      <section id="qr" class="carte qr">
+        <h2>Lien à envoyer</h2>
+        <p><code class="texte-long">{{ lien_candidature }}</code></p>
+        <img src="/admin/candidatures/{{ c.id }}/qr.svg" alt="QR code du lien de la candidature" width="200" height="200">
+        <div class="boutons">
+          <a class="bouton bouton--discret" href="/admin/candidatures/{{ c.id }}/qr.svg?telecharger=1">SVG</a>
+          <a class="bouton bouton--discret" href="/admin/candidatures/{{ c.id }}/qr.png?telecharger=1">PNG</a>
+        </div>
+      </section>
+
+      <section class="zone-danger">
+        <div>
+          <h2>Supprimer la candidature</h2>
+          <p class="muted">Le lien continue de mener au CV ; ses visites restent dans le journal.</p>
+        </div>
+        <form method="post" action="/admin/candidatures/{{ c.id }}/supprimer"
+              data-confirmer="Supprimer la candidature « {{ c.entreprise }} » ?">
+          <button type="submit" class="danger">Supprimer</button>
+        </form>
+      </section>
+    </aside>
+    {% endif %}
+  </div>
+{% endblock %}

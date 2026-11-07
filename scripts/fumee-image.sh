@@ -2,12 +2,14 @@
 # Test de fumée d'une image : réglages de la prod (CV_PROD=1, lecture seule, volume
 # neuf), mais projet, volume et ports à part. Rien ne reste à la fin.
 #
-#   scripts/fumee-image.sh <image>        (PYTHON=… : interpréteur qui a pypdf)
+#   scripts/fumee-image.sh <image>        (PYTHON=… : interpréteur qui a pypdf ;
+#                                          COMMIT_ATTENDU=<sha> : commit du pied de page)
 set -euo pipefail
 
 IMAGE="${1:?usage : scripts/fumee-image.sh <image>}"
 RACINE="$(cd "$(dirname "$0")/.." && pwd)"
 PYTHON="${PYTHON:-python3}"
+COMMIT_ATTENDU="${COMMIT_ATTENDU:-}"
 PUBLIC="http://127.0.0.1:18010"
 TMP="$(mktemp -d)"
 RESEAU_CREE=0
@@ -69,8 +71,20 @@ done
 obtenir / 200
 grep -qi '^content-security-policy:' "$TMP/entetes" || echec "/ : aucune CSP"
 if grep -qi '^set-cookie:' "$TMP/entetes"; then echec "/ : cookie posé"; fi
+if [ -n "$COMMIT_ATTENDU" ]; then
+    grep -q "/commit/$COMMIT_ATTENDU\"" "$TMP/corps" || echec "/ : commit absent du pied de page"
+fi
 
 obtenir /admin/ 404
+
+# Les contrôles de la sonde de prod (security.txt, /sante, liens de la page…) :
+# l'image qui part en prod passe déjà la sonde qui la surveillera.
+"$RACINE/scripts/sonde.sh" "$PUBLIC" >"$TMP/sonde.log" 2>&1 \
+    || { cat "$TMP/sonde.log" >&2; echec "sonde"; }
+
+# Carte d'aperçu (og:image) : dessinée avec les polices DejaVu de l'image.
+obtenir /devops/carte.png 200
+[ "$(head -c 4 "$TMP/corps" | tail -c 3)" = "PNG" ] || echec "/devops/carte.png : ce n'est pas un PNG"
 
 for pdf in /devops.pdf /en/devops.pdf /lead-tech.pdf /en/lead-tech.pdf; do
     obtenir "$pdf" 200

@@ -1,0 +1,32 @@
+{% extends "admin/base.html" %}
+{% block titre %}Candidatures{% endblock %}
+{% block contenu %}
+  <header class="entete-page">
+    <div>
+      <h1>Candidatures</h1>
+      <p class="muted">Un lien <code>?src=</code> par entreprise : ses visites, puis le PDF ou le
+        formulaire de contact ouverts dans la foulée, sont rattachés à la candidature.</p>
+    </div>
+    <a class="bouton" href="/admin/candidatures/nouvelle">Ajouter</a>
+  </header>
+  {% if candidatures %}
+  <ul class="liste liste--cadre">
+    {% for c in candidatures %}
+    {% set phrase, _dernier = resumes[c.id] %}
+    <li><a class="liste__lien" href="/admin/candidatures/{{ c.id }}">
+      <span>
+        <span class="liste__titre">{{ c.entreprise }}</span>
+        <span class="badge badge--{{ c.statut }}">{{ c.statut | libelle }}</span>
+        {% if c.poste %}<span class="muted petit bloc">{{ c.poste }}</span>{% endif %}
+        <span class="muted petit bloc">{{ c.envoyee_le.strftime("%d/%m/%Y") if c.envoyee_le else "Pas encore envoyée" }}
+          · {{ c.version_slug }} ({{ c.langue }}) · <code>?src={{ c.source }}</code></span>
+        <span class="petit bloc">{{ phrase }}</span>
+      </span>
+      <span class="chevron" aria-hidden="true">›</span>
+    </a></li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="vide">Aucune candidature pour l'instant : <a href="/admin/candidatures/nouvelle">ajoutez la première</a>.</p>
+  {% endif %}
+{% endblock %}

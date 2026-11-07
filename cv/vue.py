@@ -46,6 +46,8 @@ class Job:
     technos: str
     en_cours: bool
     annee: str  # année de fin (ou de début) : ce qu'affiche une formation
+    lien: str = ""        # https uniquement
+    lien_court: str = ""  # le même, sans schéma ni « / » final : ce qu'on lit
 
 
 @dataclass(frozen=True)
@@ -53,6 +55,7 @@ class VueCV:
     slug: str
     lang: str
     noindex: bool
+    par_defaut: bool  # servie aussi sur / : c'est son adresse canonique
     nom: str
     titre: str
     accroche: str
@@ -103,6 +106,7 @@ def _missions(entree: Entree, coche: VersionElement, lang: str) -> list[str]:
 
 def _job(entree: Entree, coche: VersionElement, lang: str, aujourd_hui: date) -> Job:
     missions = _missions(entree, coche, lang)
+    lien = _url_sure(entree.lien)
     return Job(
         cle=f"e{entree.id}", type=entree.type, voie=entree.voie,
         intitule=champ(entree, "intitule", lang),
@@ -111,6 +115,8 @@ def _job(entree: Entree, coche: VersionElement, lang: str, aujourd_hui: date) ->
         duree=duree(entree.debut, entree.fin, lang, aujourd_hui),
         missions=missions, technos=entree.technos or "", en_cours=entree.fin is None,
         annee=str((entree.fin or entree.debut).year),
+        lien=lien,
+        lien_court=lien.removeprefix("https://").removeprefix("www.").rstrip("/"),
     )
 
 
@@ -159,6 +165,7 @@ def assembler_vue(session, slug: str | None, lang: str, aujourd_hui: date | None
 
     return VueCV(
         slug=version.slug, lang=lang, noindex=version.statut == "non_listee",
+        par_defaut=bool(version.par_defaut),
         nom=profil.nom_complet or "", titre=champ(version, "titre", lang),
         accroche=champ(version, "accroche", lang), localisation=profil.localisation or "",
         age=age, ouvert=bool(profil.ouvert_opportunites),

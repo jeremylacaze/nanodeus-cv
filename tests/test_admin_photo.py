@@ -106,12 +106,13 @@ def test_photo_publique(public_avec_photo):
     assert "Set-Cookie" not in r.headers
     corps = client.get("/devops").get_data(as_text=True)
     assert f'<img class="photo" src="/photo/{nom}"' in corps
-    assert f'<meta property="og:image" content="http://localhost/photo/{nom}">' in corps
+    # L'aperçu des réseaux est la carte dessinée, qui incorpore la photo.
+    assert '<meta property="og:image" content="http://localhost/devops/carte.png">' in corps
 
 
-def test_sans_photo_ni_og_image(fabrique_app):
+def test_sans_photo_initiales(fabrique_app):
     corps = fabrique_app().test_client().get("/devops").get_data(as_text=True)
-    assert "og:image" not in corps and 'class="photo" aria-hidden="true"' in corps
+    assert "/photo/" not in corps and 'class="photo" aria-hidden="true"' in corps
 
 
 @pytest.mark.parametrize("nom", ["abc.jpg", "..%2Fcv.sqlite3", "0123456789abcdef.png",
@@ -149,11 +150,12 @@ def test_ancienne_url_publique_404_apres_remplacement(admin, monkeypatch):
 
 
 def test_photo_absente_du_disque_initiales(public_avec_photo):
-    # Base restaurée sans le dossier photos/ : pas d'image cassée ni d'og:image en 404.
+    # Base restaurée sans le dossier photos/ : ni image cassée ni carte en erreur.
     client, nom = public_avec_photo
     (client.application.config["CV"].DOSSIER_PHOTOS / nom).unlink()
     corps = client.get("/devops").get_data(as_text=True)
-    assert "og:image" not in corps and 'class="photo" aria-hidden="true"' in corps
+    assert f"/photo/{nom}" not in corps and 'class="photo" aria-hidden="true"' in corps
+    assert client.get("/devops/carte.png").status_code == 200
 
 
 def test_profil_absent_message_dedie(fabrique_app):
@@ -170,3 +172,10 @@ def test_photo_trop_lourde_reste_sur_le_profil(admin):
     r = _envoyer(admin, lourde)
     corps = r.get_data(as_text=True)
     assert r.status_code == 413 and "16 Mio" in corps and 'id="photo-fichier"' in corps
+
+
+def test_la_carte_change_avec_la_photo(public_avec_photo):
+    client, nom = public_avec_photo
+    avec = client.get("/devops/carte.png").headers["ETag"]
+    (client.application.config["CV"].DOSSIER_PHOTOS / nom).unlink()
+    assert client.get("/devops/carte.png").headers["ETag"] != avec

@@ -2,12 +2,29 @@
 {% block meta %}
   {% if vue.noindex %}<meta name="robots" content="noindex">{% endif %}
   {% if vue.accroche %}<meta name="description" content="{{ vue.accroche }}">{% endif %}
+  {#- Absents de l'aperçu de l'admin : il n'a pas d'adresse publique. #}
+  {% if urls_langues %}
+  <link rel="canonical" href="{{ url_canonique }}">
+  <link rel="alternate" hreflang="fr" href="{{ urls_langues.fr }}">
+  <link rel="alternate" hreflang="en" href="{{ urls_langues.en }}">
+  <link rel="alternate" hreflang="x-default" href="{{ urls_langues.fr }}">
+  {% endif %}
+  {#- tojson échappe <, > et & : le contenu ne peut pas fermer la balise. #}
+  {% if jsonld %}<script type="application/ld+json" nonce="{{ csp_nonce }}">{{ jsonld | tojson }}</script>{% endif %}
   {# Aperçu LinkedIn : jamais de coordonnées ici. #}
   <meta property="og:type" content="profile">
   <meta property="og:title" content="{{ vue.nom }}{% if vue.titre %} — {{ vue.titre }}{% endif %}">
   {% if vue.accroche %}<meta property="og:description" content="{{ vue.accroche }}">{% endif %}
   <meta property="og:url" content="{{ url_canonique }}">
-  {% if url_og_image %}<meta property="og:image" content="{{ url_og_image }}">{% endif %}
+  {#- Carte dessinée par cv/carte_og.py ; l'aperçu de l'admin n'en a pas. #}
+  {% if url_og_image %}
+  <meta property="og:image" content="{{ url_og_image }}">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="{{ vue.nom }}{% if vue.titre %} — {{ vue.titre }}{% endif %}">
+  <meta name="twitter:card" content="summary_large_image">
+  {% endif %}
   <meta property="og:locale" content="{{ 'en_US' if lang == 'en' else 'fr_FR' }}">
 {% endblock %}
 {% block titre %}{{ vue.nom }}{% if vue.titre %} · {{ vue.titre }}{% endif %}{% endblock %}
@@ -19,7 +36,7 @@
   {# Volontairement en anglais sur la page française : c'est la proposition de bascule. #}
   <p class="suggestion-langue" lang="en"><a href="{{ url_autre_langue }}" hreflang="en">View in English</a></p>
   {% endif %}
-  <main>
+  <main id="contenu">
     {% include "_bandeau.html" %}
     {% include "_pipeline.html" %}
     {% include "_tests.html" %}

@@ -116,15 +116,16 @@ def test_open_graph(client):
     assert ('<meta property="og:title" content="Jeremy LACAZE-RUSQUES — '
             'Administrateur applicatif / DevOps">') in html
     assert 'property="og:description" content="Porteur d&#39;idées' in html
-    assert '<meta property="og:url" content="http://localhost/devops">' in html
+    # devops est la version par défaut : son adresse canonique est /.
+    assert '<meta property="og:url" content="http://localhost/">' in html
     assert 'property="og:locale" content="fr_FR"' in html
     assert 'property="og:locale" content="en_US"' in _html(client, "/en/devops")
-    assert 'og:image' not in html
+    assert '<meta property="og:image" content="http://localhost/devops/carte.png">' in html
 
 
 def test_og_url_sans_parametre(client):
     html = _html(client, "/devops?src=qr")
-    assert '<meta property="og:url" content="http://localhost/devops">' in html
+    assert '<meta property="og:url" content="http://localhost/">' in html
 
 
 def test_script_et_feuille_de_style(client):
@@ -204,3 +205,48 @@ def test_selecteur_de_theme_en_anglais(client):
 def test_mention_du_choix_de_theme(client):
     assert "votre choix de thème reste dans votre navigateur" in _html(client)
     assert "your theme choice stays in your browser" in _html(client, "/en/devops")
+
+
+# --- Lien d'évitement et liens directs vers une expérience ----------------------
+
+@pytest.mark.parametrize("url", ["/devops", "/en/devops", "/inconnue", "/devops/contact"])
+def test_lien_d_evitement_vers_le_contenu(client, url):
+    r = client.get(url)
+    html = r.get_data(as_text=True)
+    corps = html.split("<body>", 1)[1].lstrip()
+    # Premier élément focalisable de la page, et sa cible existe.
+    assert corps.startswith('<a class="evitement" href="#contenu">')
+    assert re.search(r'<main id="contenu"', html)
+
+
+def test_lien_d_evitement_traduit(client):
+    assert ">Aller au contenu</a>" in _html(client)
+    assert ">Skip to content</a>" in _html(client, "/en/devops")
+
+
+def test_chaque_detail_porte_son_lien_direct(client):
+    html = _html(client)
+    for cle in re.findall(r'id="detail-(e\d+|prochaine)"', html):
+        assert re.search(rf'<a class="ancre" href="#detail-{cle}" aria-label="[^"]+">#</a>', html)
+
+
+def test_lien_direct_nomme_l_experience(client):
+    html = _html(client)
+    assert 'aria-label="Lien direct vers « Ingénieur DevOps »"' in html
+    assert 'aria-label="Direct link to “DevOps engineer”"' in _html(client, "/en/devops")
+
+
+def _avec_lien(s):
+    e = s.scalars(select(Entree).where(Entree.voie == "parallele")).first()
+    e.lien = "https://github.com/jeremylacaze/readln/"
+
+
+def test_lien_du_projet_dans_son_detail(fabrique_app):
+    html = _html(fabrique_app(modifier=_avec_lien).test_client())
+    assert re.search(r'<a class="lien-projet" href="https://github.com/jeremylacaze/readln/"'
+                     r' rel="noopener" target="_blank">[^<]*github\.com/jeremylacaze/readln</a>',
+                     html)
+
+
+def test_sans_lien_rien_n_est_affiche(client):
+    assert "lien-projet" not in _html(client)

@@ -52,6 +52,11 @@ jobs:
           # Jeton fourni par Actions : aucun secret à gérer.
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Date du build, affichée en pied de page avec le commit.
+      - name: Date du build
+        id: build
+        run: echo "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
       # Sans cache de build, comme la vérification : rien d'écrit par une autre
       # branche n'entre dans l'image de production.
       - name: Build et push
@@ -60,8 +65,13 @@ jobs:
           context: .
           push: true
           tags: ${{ env.IMAGE }}:${{ github.sha }}
+          build-args: |
+            CV_COMMIT=${{ github.sha }}
+            CV_CONSTRUIT_LE=${{ steps.build.outputs.date }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.created=${{ steps.build.outputs.date }}
 
   # 3. Sauvegarde de la base avant la bascule — étape bloquante : si elle
   #    échoue, le déploiement n'a pas lieu. La clé n'ouvre que deux commandes

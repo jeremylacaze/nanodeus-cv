@@ -47,6 +47,26 @@
     </section>
   </div>
 
+  {% if candidatures %}
+  <section class="carte">
+    <header class="carte__entete">
+      <h2>Candidatures : dernière activité</h2>
+      <a href="/admin/candidatures">Toutes →</a>
+    </header>
+    <ul class="liste">
+      {% for c, phrase in candidatures %}
+      <li class="liste__ligne">
+        <div>
+          <a class="liste__titre" href="/admin/candidatures/{{ c.id }}">{{ c.entreprise }}</a>
+          <span class="badge badge--{{ c.statut }}">{{ c.statut | libelle }}</span>
+          <div class="muted petit">{{ phrase }}</div>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
   <section class="carte">
     <header class="carte__entete">
       <h2>Versions</h2>
