@@ -289,3 +289,17 @@ def test_aucune_ressource_externe(monkeypatch):
 def test_nom_fichier(nom, complet, attendu):
     vue = SimpleNamespace(nom=nom, slug="devops", lang="fr")
     assert pdf.nom_fichier(vue, complet) == attendu
+
+
+def test_lien_du_projet_cliquable_dans_le_pdf(fabrique_app):
+    from cv.models import Entree
+
+    def avec_lien(s):
+        e = s.scalars(select(Entree).where(Entree.voie == "parallele")).first()
+        e.lien = "https://github.com/jeremylacaze/readln"
+    contenu = fabrique_app(modifier=avec_lien).test_client().get("/devops.pdf").data
+    liens = [a["/A"]["/URI"] for page in PdfReader(BytesIO(contenu)).pages
+             for a in (page.get("/Annots") or []) if a.get_object().get("/A")
+             for a in [a.get_object()]]
+    assert "https://github.com/jeremylacaze/readln" in liens
+    assert _pages(contenu) == 1

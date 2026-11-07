@@ -46,6 +46,8 @@ class Job:
     technos: str
     en_cours: bool
     annee: str  # année de fin (ou de début) : ce qu'affiche une formation
+    lien: str = ""        # https uniquement
+    lien_court: str = ""  # le même, sans schéma ni « / » final : ce qu'on lit
 
 
 @dataclass(frozen=True)
@@ -104,6 +106,7 @@ def _missions(entree: Entree, coche: VersionElement, lang: str) -> list[str]:
 
 def _job(entree: Entree, coche: VersionElement, lang: str, aujourd_hui: date) -> Job:
     missions = _missions(entree, coche, lang)
+    lien = _url_sure(entree.lien)
     return Job(
         cle=f"e{entree.id}", type=entree.type, voie=entree.voie,
         intitule=champ(entree, "intitule", lang),
@@ -112,6 +115,8 @@ def _job(entree: Entree, coche: VersionElement, lang: str, aujourd_hui: date) ->
         duree=duree(entree.debut, entree.fin, lang, aujourd_hui),
         missions=missions, technos=entree.technos or "", en_cours=entree.fin is None,
         annee=str((entree.fin or entree.debut).year),
+        lien=lien,
+        lien_court=lien.removeprefix("https://").removeprefix("www.").rstrip("/"),
     )
 
 

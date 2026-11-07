@@ -234,3 +234,19 @@ def test_lien_direct_nomme_l_experience(client):
     html = _html(client)
     assert 'aria-label="Lien direct vers « Ingénieur DevOps »"' in html
     assert 'aria-label="Direct link to “DevOps engineer”"' in _html(client, "/en/devops")
+
+
+def _avec_lien(s):
+    e = s.scalars(select(Entree).where(Entree.voie == "parallele")).first()
+    e.lien = "https://github.com/jeremylacaze/readln/"
+
+
+def test_lien_du_projet_dans_son_detail(fabrique_app):
+    html = _html(fabrique_app(modifier=_avec_lien).test_client())
+    assert re.search(r'<a class="lien-projet" href="https://github.com/jeremylacaze/readln/"'
+                     r' rel="noopener" target="_blank">[^<]*github\.com/jeremylacaze/readln</a>',
+                     html)
+
+
+def test_sans_lien_rien_n_est_affiche(client):
+    assert "lien-projet" not in _html(client)

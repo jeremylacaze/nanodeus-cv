@@ -280,3 +280,6 @@ a.btn-contact, span.btn-contact { display: inline-block; text-decoration: none; 
   .job[aria-expanded="true"] { box-shadow: none; border-color: var(--bord); }
   .detail, .panneau, .kpi { break-inside: avoid; }
 }
+
+/* Lien vers le dépôt ou la démo d'un projet, sous ses technos. */
+.detail__lien { margin-top: 8px; font-family: var(--mono); font-size: 13px; }

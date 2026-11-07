@@ -212,3 +212,21 @@ def test_apercu_rend_un_brouillon(session):
     f.version(session, "b", statut="brouillon")
     assert assembler_vue(session, "b", "fr") is None
     assert assembler_vue(session, "b", "fr", apercu=True).slug == "b"
+
+
+def test_lien_d_un_projet(session):
+    f.profil(session)
+    e = f.entree(session, type="projet", voie="parallele",
+                 lien="https://github.com/jeremylacaze/readln")
+    f.version(session, elements=[e])
+    job = assembler_vue(session, "devops", "fr").projets[0]
+    assert job.lien == "https://github.com/jeremylacaze/readln"
+    assert job.lien_court == "github.com/jeremylacaze/readln"
+
+
+def test_lien_non_https_ignore(session):
+    f.profil(session)
+    e = f.entree(session, lien="javascript:alert(1)")
+    f.version(session, elements=[e])
+    job = assembler_vue(session, "devops", "fr").postes[0]
+    assert job.lien == "" and job.lien_court == ""

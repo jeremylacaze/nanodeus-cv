@@ -69,7 +69,8 @@ TYPES = {t.cle: t for t in (
          Champ("lieu", "Lieu", max=120),
          Champ("technos", "Technos", max=400),
          Champ("missions_fr", "Missions (FR)", type="texte", max=MAX_TEXTE, aide=UNE_PAR_LIGNE),
-         Champ("missions_en", "Missions (EN)", type="texte", max=MAX_TEXTE, aide=UNE_PAR_LIGNE)),
+         Champ("missions_en", "Missions (EN)", type="texte", max=MAX_TEXTE, aide=UNE_PAR_LIGNE),
+         Champ("lien", "Lien", type="url", max=300, aide="Dépôt ou démo (projets surtout).")),
         _libelle_entree, (Entree.debut.desc(), Entree.id.desc()), _dates_dans_l_ordre,
         _detail_entree),
     TypeStock(

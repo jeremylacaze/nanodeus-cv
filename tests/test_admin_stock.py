@@ -109,3 +109,18 @@ def test_contenu_echappe(admin):
 def test_id_hors_64_bits_404(admin):
     assert admin.get(f"/admin/stock/parcours/{2**64}").status_code == 404
     assert admin.get(f"/admin/stock/parcours/{2**63}").status_code == 404
+
+
+def test_lien_d_une_entree(admin):
+    r = admin.post("/admin/stock/parcours/nouveau", headers=ORIGINE,
+                   data={**ENTREE_OK, "lien": "https://github.com/x/y"})
+    assert r.status_code == 303
+    with _session(admin) as s:
+        e = s.scalars(select(Entree).where(Entree.intitule_fr == "Testeur logiciel")).one()
+        assert e.lien == "https://github.com/x/y"
+
+
+def test_lien_non_https_refuse(admin):
+    r = admin.post("/admin/stock/parcours/nouveau", headers=ORIGINE,
+                   data={**ENTREE_OK, "lien": "http://exemple.test"})
+    assert r.status_code == 400 and "Adresse https:// attendue" in r.get_data(as_text=True)

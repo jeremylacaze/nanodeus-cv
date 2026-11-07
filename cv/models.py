@@ -66,6 +66,7 @@ class Entree(Base):
     technos: Mapped[str] = mapped_column(String(400), default="")
     missions_fr: Mapped[str] = mapped_column(Text, default="")
     missions_en: Mapped[str | None] = mapped_column(Text)
+    lien: Mapped[str | None] = mapped_column(String(300))  # dépôt ou démo, https
 
 
 class SoftSkill(Base):

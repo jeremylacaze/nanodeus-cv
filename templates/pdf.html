@@ -11,7 +11,7 @@
 {% set org = (job.organisation ~ " · " ~ job.via) if job.via and job.organisation else (job.organisation or job.via) %}
 <div class="log carte">
   <div class="log__tete">
-    <p class="log__nom"><span class="ok">✓</span> {{ job.intitule }}</p>
+    <p class="log__nom"><span class="ok">✓</span> {% if job.lien %}<a href="{{ job.lien }}">{{ job.intitule }}</a>{% else %}{{ job.intitule }}{% endif %}</p>
     <p class="log__duree mono muted">{{ job.duree }}</p>
   </div>
   <p class="log__meta muted">{{ [org, job.periode] | select | join(" · ") }}</p>

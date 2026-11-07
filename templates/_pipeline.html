@@ -30,6 +30,7 @@
   </ol>
   {% endif %}
   {% if job.technos %}<p class="technos muted">› {{ job.technos }}</p>{% endif %}
+  {% if job.lien %}<p class="detail__lien">↗ <a class="lien-projet" href="{{ job.lien }}" rel="noopener" target="_blank">{{ job.lien_court }}</a></p>{% endif %}
 </section>
 {%- endmacro %}
 {% set jobs = vue.formations + vue.postes + vue.projets %}
