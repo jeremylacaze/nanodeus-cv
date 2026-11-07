@@ -77,6 +77,11 @@ fi
 
 obtenir /admin/ 404
 
+# Les contrôles de la sonde de prod (security.txt, /sante, liens de la page…) :
+# l'image qui part en prod passe déjà la sonde qui la surveillera.
+"$RACINE/scripts/sonde.sh" "$PUBLIC" >"$TMP/sonde.log" 2>&1 \
+    || { cat "$TMP/sonde.log" >&2; echec "sonde"; }
+
 # Carte d'aperçu (og:image) : dessinée avec les polices DejaVu de l'image.
 obtenir /devops/carte.png 200
 [ "$(head -c 4 "$TMP/corps" | tail -c 3)" = "PNG" ] || echec "/devops/carte.png : ce n'est pas un PNG"

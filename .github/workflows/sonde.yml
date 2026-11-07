@@ -1,0 +1,31 @@
+# Sonde externe : toutes les 30 minutes, le site public est interrogé depuis
+# Internet comme un visiteur (pages, PDF, carte d'aperçu, security.txt, admin
+# fermée, certificat). Un échec envoie la notification habituelle d'Actions.
+# Détail des contrôles : scripts/sonde.sh. GitHub suspend les workflows planifiés
+# d'un dépôt sans activité depuis 60 jours : un commit, ou « Enable workflow »
+# dans l'onglet Actions, les relance.
+name: Sonde
+
+on:
+  schedule:
+    - cron: "17,47 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: sonde
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  sonde:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts/sonde.sh
+          sparse-checkout-cone-mode: false
+      - run: scripts/sonde.sh https://cv.nanodeus.com
