@@ -3,4 +3,4 @@
 # à jour ne change pas le verdict de la CI sans commit ; Dependabot propose les
 # montées de version.
 pip-audit==2.10.1
-zizmor==1.31.1
+zizmor==1.32.0
