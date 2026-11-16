@@ -5,7 +5,7 @@
   "type": "module",
   "engines": { "node": ">=22" },
   "devDependencies": {
-    "@lhci/cli": "0.15.1",
+    "@lhci/cli": "0.16.0",
     "pa11y": "10.0.0",
     "puppeteer": "25.16.0"
   }
